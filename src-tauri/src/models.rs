@@ -122,8 +122,8 @@ pub fn download_model(
     id: String,
     dest_dir: String,
 ) -> Result<()> {
-    let model = find_model(&id)
-        .ok_or_else(|| AppError::Model(format!("Unknown model id: {}", id)))?;
+    let model =
+        find_model(&id).ok_or_else(|| AppError::Model(format!("Unknown model id: {}", id)))?;
 
     let cancel = Arc::new(AtomicBool::new(false));
     state
@@ -159,8 +159,8 @@ pub fn download_model(
                     crate::settings::SettingsManager::new(app.clone()).get_settings()
                 {
                     settings.local_model_path = Some(path.to_string_lossy().to_string());
-                    let _ = crate::settings::SettingsManager::new(app.clone())
-                        .save_settings(&settings);
+                    let _ =
+                        crate::settings::SettingsManager::new(app.clone()).save_settings(&settings);
                 }
                 if let Err(e) = app.emit(
                     "model-download-done",
@@ -174,9 +174,10 @@ pub fn download_model(
             }
             Err(crate::errors::AppError::Cancelled) => {
                 cancels.lock().unwrap().remove(&model_id);
-                if let Err(emit_err) =
-                    app.emit("model-download-cancelled", serde_json::json!({ "id": model_id }))
-                {
+                if let Err(emit_err) = app.emit(
+                    "model-download-cancelled",
+                    serde_json::json!({ "id": model_id }),
+                ) {
                     tracing::warn!("Failed to emit model-download-cancelled: {}", emit_err);
                 }
             }
@@ -198,7 +199,10 @@ pub fn download_model(
 
 #[tauri::command]
 pub fn cancel_download(state: State<DownloadState>, id: String) -> Result<()> {
-    let cancels = state.cancels.lock().map_err(|_| AppError::Model("Lock poisoned".into()))?;
+    let cancels = state
+        .cancels
+        .lock()
+        .map_err(|_| AppError::Model("Lock poisoned".into()))?;
     if let Some(flag) = cancels.get(&id) {
         flag.store(true, Ordering::SeqCst);
     }
@@ -392,7 +396,10 @@ mod tests {
 
     #[test]
     fn validate_file_errors_on_missing_file() {
-        let result = validate_file(std::path::Path::new("/nonexistent/path/model.bin"), "abc123");
+        let result = validate_file(
+            std::path::Path::new("/nonexistent/path/model.bin"),
+            "abc123",
+        );
         assert!(result.is_err());
     }
 }
