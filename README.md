@@ -1,6 +1,6 @@
-# Tauri + React + Typescript
+# Ello
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+Ello is a Windows-first Tauri dictation app. It records from a global hotkey, transcribes locally with Whisper or remotely with Groq, and types the transcript into the active window.
 
 ## Recommended IDE Setup
 
