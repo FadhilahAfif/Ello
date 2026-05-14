@@ -136,9 +136,6 @@ export default function App() {
           <span className={`status-dot${status !== "idle" ? ` ${status}` : ""}`} />
           <span>{status === "recording" ? "Recording…" : status === "transcribing" ? "Transcribing…" : "Idle"}</span>
         </div>
-        <p className="last-transcript" aria-live="polite" aria-atomic="true">
-          {lastTranscript ?? ""}
-        </p>
       </header>
 
       {/* Error banner */}
@@ -148,6 +145,11 @@ export default function App() {
           <span>{error}</span>
         </div>
       )}
+
+      {/* Last transcript */}
+      <p className="last-transcript" aria-live="polite" aria-atomic="true">
+        {lastTranscript ?? ""}
+      </p>
 
       {/* Transcription mode */}
       <section className="card" aria-labelledby="mode-title">
