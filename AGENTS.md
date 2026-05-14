@@ -67,6 +67,7 @@ Ello is a Windows-first Tauri 2 dictation app. It records audio from a global ho
 ## Workflow Expectations
 - Before making changes, understand the current plan and learnings.
 - After discovering durable project facts, append them to the learnings file.
+- Check off tasks in `.sisyphus/plans/ello-dictation.md` (change `- [ ]` to `- [x]`) as you complete them to track progress.
 - Keep one logical change per branch when possible.
 - If something is unclear, ask one focused question instead of guessing.
 - Verify before claiming success.

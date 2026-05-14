@@ -1,8 +1,8 @@
 [package]
-name = "tauri-app"
+name = "ello"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "A Windows-first Tauri dictation app"
+authors = ["Broski"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -18,8 +18,25 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+tracing-appender = "0.2.5"
+thiserror = "2.0.18"
+tauri-plugin-store = "2.4.3"
+tauri-plugin-global-shortcut = "2.3.1"
+tauri-plugin-autostart = "2.5.1"
+cpal = "0.15.3"
+rubato = "0.16.1"
+hound = "3.5.1"
+reqwest = { version = "0.12.15", features = ["blocking", "multipart", "json"] }
+tokio = { version = "1", features = ["full"] }
+tempfile = "3.20.0"
+enigo = "0.6.1"
+arboard = "3.6.1"
+sha1 = "0.10"
+tauri-plugin-dialog = "2"
+whisper-rs = "0.16.0"
