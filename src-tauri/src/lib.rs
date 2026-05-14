@@ -41,7 +41,10 @@ pub fn run() {
 
             if let Err(e) = crate::hotkey::register_hotkeys(app.handle()) {
                 tracing::warn!("Could not register hotkeys: {}", e);
-                if let Err(emit_err) = app.emit("app-error", serde_json::json!({ "message": format!("Hotkey registration failed: {}", e) })) {
+                if let Err(emit_err) = app.emit(
+                    "app-error",
+                    serde_json::json!({ "message": format!("Hotkey registration failed: {}", e) }),
+                ) {
                     tracing::warn!("Failed to emit hotkey error: {}", emit_err);
                 }
             }

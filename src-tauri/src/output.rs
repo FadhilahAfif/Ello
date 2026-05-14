@@ -21,8 +21,8 @@ pub struct FallbackSink;
 
 impl OutputSink for EnigoTyper {
     fn output(&self, text: &str) -> Result<()> {
-        let mut enigo = Enigo::new(&Settings::default())
-            .map_err(|e| AppError::Output(e.to_string()))?;
+        let mut enigo =
+            Enigo::new(&Settings::default()).map_err(|e| AppError::Output(e.to_string()))?;
         enigo
             .text(text)
             .map_err(|e| AppError::Output(e.to_string()))?;
@@ -32,8 +32,7 @@ impl OutputSink for EnigoTyper {
 
 impl OutputSink for ClipboardSink {
     fn output(&self, text: &str) -> Result<()> {
-        let mut clipboard =
-            Clipboard::new().map_err(|e| AppError::Output(e.to_string()))?;
+        let mut clipboard = Clipboard::new().map_err(|e| AppError::Output(e.to_string()))?;
         clipboard
             .set_text(text.to_string())
             .map_err(|e| AppError::Output(e.to_string()))?;
@@ -41,8 +40,8 @@ impl OutputSink for ClipboardSink {
         // Small delay to let clipboard settle before pasting.
         std::thread::sleep(std::time::Duration::from_millis(50));
 
-        let mut enigo = Enigo::new(&Settings::default())
-            .map_err(|e| AppError::Output(e.to_string()))?;
+        let mut enigo =
+            Enigo::new(&Settings::default()).map_err(|e| AppError::Output(e.to_string()))?;
         enigo
             .key(Key::Control, Press)
             .map_err(|e| AppError::Output(e.to_string()))?;
@@ -67,10 +66,7 @@ impl OutputSink for FallbackSink {
         match EnigoTyper.output(text) {
             Ok(()) => Ok(()),
             Err(e) => {
-                tracing::warn!(
-                    "EnigoTyper failed ({}), falling back to clipboard",
-                    e
-                );
+                tracing::warn!("EnigoTyper failed ({}), falling back to clipboard", e);
                 ClipboardSink.output(text)
             }
         }

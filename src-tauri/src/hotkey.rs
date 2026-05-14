@@ -54,7 +54,12 @@ pub fn register_hotkeys(app: &AppHandle) -> Result<(), AppError> {
                 }
             }
         })
-        .map_err(|e| AppError::Hotkey(format!("Failed to register hotkey {}: {}", DEFAULT_HOTKEY, e)))?;
+        .map_err(|e| {
+            AppError::Hotkey(format!(
+                "Failed to register hotkey {}: {}",
+                DEFAULT_HOTKEY, e
+            ))
+        })?;
 
     tracing::info!("Registered hotkey: {}", DEFAULT_HOTKEY);
     Ok(())

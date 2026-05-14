@@ -96,10 +96,7 @@ pub fn trigger_start_recording(app: AppHandle) -> Result<()> {
         if let Err(e) = result {
             tracing::error!("Recording pipeline error: {}", e);
             app_clone
-                .emit(
-                    "app-error",
-                    serde_json::json!({ "message": e.to_string() }),
-                )
+                .emit("app-error", serde_json::json!({ "message": e.to_string() }))
                 .ok();
         }
     });
@@ -124,9 +121,9 @@ fn run_recording_pipeline(
 
     let text = match settings.transcription_mode {
         crate::settings::TranscriptionMode::Cloud => {
-            let key = settings.groq_api_key.ok_or_else(|| {
-                AppError::Transcription("Groq API key not set".to_string())
-            })?;
+            let key = settings
+                .groq_api_key
+                .ok_or_else(|| AppError::Transcription("Groq API key not set".to_string()))?;
             let transcriber =
                 crate::transcribe::cloud::GroqTranscriber::new(key, settings.cloud_model);
             crate::transcribe::Transcriber::transcribe(&transcriber, &raw_pcm)?
