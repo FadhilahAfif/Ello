@@ -1,6 +1,7 @@
 use crate::errors::{AppError, Result};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use rubato::{FftFixedIn, Resampler};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -55,11 +56,22 @@ pub fn enumerate_devices() -> Result<Vec<DeviceInfo>> {
 /// Records from a CPAL input device, downmixes to mono, resamples to 16 kHz.
 pub struct MicSource {
     device_name: Option<String>,
+    should_stop: Option<Arc<AtomicBool>>,
 }
 
 impl MicSource {
     pub fn new(device_name: Option<String>) -> Self {
-        Self { device_name }
+        Self {
+            device_name,
+            should_stop: None,
+        }
+    }
+
+    pub fn new_chunked(device_name: Option<String>, should_stop: Arc<AtomicBool>) -> Self {
+        Self {
+            device_name,
+            should_stop: Some(should_stop),
+        }
     }
 }
 
@@ -105,7 +117,22 @@ impl AudioSource for MicSource {
             .map_err(|e| AppError::Audio(e.to_string()))?;
 
         stream.play().map_err(|e| AppError::Audio(e.to_string()))?;
-        std::thread::sleep(Duration::from_secs(max_secs));
+
+        // Poll until deadline reached or should_stop flag is set.
+        let poll_interval = Duration::from_millis(50);
+        let deadline = std::time::Instant::now() + Duration::from_secs(max_secs);
+        loop {
+            std::thread::sleep(poll_interval);
+            if let Some(ref flag) = self.should_stop {
+                if flag.load(Ordering::SeqCst) {
+                    break;
+                }
+            }
+            if std::time::Instant::now() >= deadline {
+                break;
+            }
+        }
+
         drop(stream);
 
         let raw = Arc::try_unwrap(buffer)
