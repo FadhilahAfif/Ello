@@ -78,15 +78,16 @@ export default function App() {
 
   // Load settings and devices on mount
   useEffect(() => {
-    Promise.all([
-      invoke<AppSettings>("get_settings"),
-      invoke<AudioDevice[]>("get_devices"),
-    ])
-      .then(([s, d]) => {
-        setSettings(s);
-        setDevices(d);
-      })
+    invoke<AppSettings>("get_settings")
+      .then(setSettings)
       .catch((e) => setError(String(e)));
+
+    invoke<AudioDevice[]>("get_devices")
+      .then((d) => {
+        if (d.length > 0) setDevices(d);
+      })
+      .catch((e) => setError("Failed to load audio devices: " + String(e)));
+
     invoke<ModelInfo[]>("get_model_manifest").then(setManifest).catch(console.error);
   }, []);
 
