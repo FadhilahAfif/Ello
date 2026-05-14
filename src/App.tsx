@@ -9,6 +9,21 @@ type TranscriptionMode = "cloud" | "local";
 type HotkeyMode = "toggle" | "pushToTalk";
 type RecordingStatus = "idle" | "recording" | "transcribing";
 
+interface ModelInfo {
+  id: string;
+  name: string;
+  filename: string;
+  sizeBytes: number;
+  sha1: string;
+}
+
+type ModelStatus =
+  | { kind: "idle" }
+  | { kind: "downloading"; downloaded: number; total: number }
+  | { kind: "validating" }
+  | { kind: "installed"; path: string }
+  | { kind: "error"; message: string };
+
 interface AppSettings {
   schemaVersion: number;
   groqApiKey: string | null;
@@ -17,6 +32,7 @@ interface AppSettings {
   hotkeyMode: HotkeyMode;
   autostartEnabled: boolean;
   micDeviceId: string | null;
+  localModelPath: string | null;
 }
 
 interface AudioDevice {
@@ -35,6 +51,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   hotkeyMode: "toggle",
   autostartEnabled: false,
   micDeviceId: null,
+  localModelPath: null,
 };
 
 const CLOUD_MODELS = [
@@ -53,6 +70,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<RecordingStatus>("idle");
   const [lastTranscript, setLastTranscript] = useState<string | null>(null);
+  const [manifest, setManifest] = useState<ModelInfo[]>([]);
+  const [modelStatuses, setModelStatuses] = useState<Record<string, ModelStatus>>({});
 
   // Load settings and devices on mount
   useEffect(() => {
@@ -65,6 +84,7 @@ export default function App() {
         setDevices(d);
       })
       .catch((e) => setError(String(e)));
+    invoke<ModelInfo[]>("get_model_manifest").then(setManifest).catch(console.error);
   }, []);
 
   // Subscribe to backend events
@@ -91,6 +111,30 @@ export default function App() {
       listen<{ message: string }>("app-error", (event) => {
         setStatus("idle");
         setError(event.payload.message);
+      }),
+      listen<{ id: string; downloaded: number; total: number; validating?: boolean }>(
+        "model-download-progress",
+        (event) => {
+          const { id, downloaded, total, validating } = event.payload;
+          setModelStatuses((prev) => ({
+            ...prev,
+            [id]: validating
+              ? { kind: "validating" }
+              : { kind: "downloading", downloaded, total },
+          }));
+        }
+      ),
+      listen<{ id: string; path: string }>("model-download-done", (event) => {
+        const { id, path } = event.payload;
+        setModelStatuses((prev) => ({ ...prev, [id]: { kind: "installed", path } }));
+        setSettings((prev) => ({ ...prev, localModelPath: path }));
+      }),
+      listen<{ id: string; message: string }>("model-download-error", (event) => {
+        const { id, message } = event.payload;
+        setModelStatuses((prev) => ({ ...prev, [id]: { kind: "error", message } }));
+      }),
+      listen<{ id: string }>("model-download-cancelled", (event) => {
+        setModelStatuses((prev) => ({ ...prev, [event.payload.id]: { kind: "idle" } }));
       }),
     ])
       .then((us) => {
@@ -125,6 +169,30 @@ export default function App() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDownload = async (modelId: string) => {
+    try {
+      const { open } = await import("@tauri-apps/plugin-dialog");
+      const dir = await open({ directory: true, title: "Choose folder to save model" });
+      if (!dir || Array.isArray(dir)) return;
+      await invoke("download_model", { id: modelId, destDir: dir });
+    } catch (e) {
+      setError(String(e));
+    }
+  };
+
+  const handleCancelDownload = async (modelId: string) => {
+    try {
+      await invoke("cancel_download", { id: modelId });
+    } catch (e) {
+      setError(String(e));
+    }
+  };
+
+  const handleUseModel = (path: string) => {
+    setSettings((prev) => ({ ...prev, localModelPath: path }));
+    setDirty(true);
   };
 
   return (
@@ -203,6 +271,96 @@ export default function App() {
             </div>
           </>
         )}
+      </section>
+
+      {/* Local Model */}
+      <section className="card" aria-labelledby="model-title">
+        <span className="card-title" id="model-title">Local Model</span>
+
+        <label className="field-label" htmlFor="local-model-path">
+          Model path
+        </label>
+        <input
+          id="local-model-path"
+          type="text"
+          className="text-input"
+          placeholder="Path to .bin file (optional)"
+          value={settings.localModelPath ?? ""}
+          onChange={(e) => patch("localModelPath", e.target.value || null)}
+        />
+
+        <div className="model-list" role="list">
+          {manifest.map((model) => {
+            const st: ModelStatus = modelStatuses[model.id] ?? { kind: "idle" };
+            const installedPath = st.kind === "installed" ? st.path : null;
+            const isActive = !!installedPath && settings.localModelPath === installedPath;
+
+            return (
+              <div
+                key={model.id}
+                className={`model-row${isActive ? " active" : ""}`}
+                role="listitem"
+              >
+                <div className="model-info">
+                  <span className="model-name">{model.name}</span>
+                  <span className="model-size">
+                    {(model.sizeBytes / 1_073_741_824).toFixed(1)} GB
+                  </span>
+                </div>
+
+                <div className="model-action">
+                  {st.kind === "idle" && (
+                    <button onClick={() => handleDownload(model.id)}>Download</button>
+                  )}
+
+                  {st.kind === "downloading" && (
+                    <>
+                      <div
+                        className="progress-bar"
+                        role="progressbar"
+                        aria-label={`Downloading ${model.name}`}
+                        aria-valuenow={Math.round((st.downloaded / st.total) * 100)}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                      >
+                        <div
+                          className="progress-fill"
+                          style={{ width: `${Math.round((st.downloaded / st.total) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="progress-label">
+                        {Math.round((st.downloaded / st.total) * 100)}%
+                      </span>
+                      <button onClick={() => handleCancelDownload(model.id)}>Cancel</button>
+                    </>
+                  )}
+
+                  {st.kind === "validating" && (
+                    <span className="model-validating">Validating…</span>
+                  )}
+
+                  {st.kind === "installed" && (
+                    <>
+                      <span className="model-installed" aria-label="Installed">✓</span>
+                      {!isActive ? (
+                        <button onClick={() => handleUseModel(st.path)}>Use</button>
+                      ) : (
+                        <span className="model-active-label">Active</span>
+                      )}
+                    </>
+                  )}
+
+                  {st.kind === "error" && (
+                    <>
+                      <span className="model-error" title={st.message}>Error</span>
+                      <button onClick={() => handleDownload(model.id)}>Retry</button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       {/* Audio device */}
