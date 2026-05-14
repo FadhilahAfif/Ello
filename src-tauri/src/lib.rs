@@ -5,6 +5,7 @@ pub mod hotkey;
 pub mod output;
 pub mod settings;
 pub mod transcribe;
+pub mod tray;
 
 use crate::commands::RecordingState;
 use tauri::{Emitter, Manager};
@@ -45,6 +46,11 @@ pub fn run() {
                 }
             }
 
+            crate::tray::setup_tray(app.handle()).map_err(|e| {
+                tracing::error!("Tray setup failed: {}", e);
+                e
+            })?;
+
             Ok(())
         })
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -62,6 +68,16 @@ pub fn run() {
             commands::start_recording,
             commands::stop_recording,
         ])
+        .on_window_event(|window, event| {
+            if window.label() == "main" {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    if let Err(e) = window.hide() {
+                        tracing::warn!("Failed to hide main window: {}", e);
+                    }
+                    api.prevent_close();
+                }
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
