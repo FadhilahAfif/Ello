@@ -2,7 +2,7 @@ use crate::errors::{AppError, Result};
 use crate::transcribe::Transcriber;
 use reqwest::blocking::multipart;
 use std::io::Write;
-use tempfile::NamedTempFile;
+use tempfile::Builder as TempBuilder;
 
 const GROQ_TRANSCRIPTION_URL: &str = "https://api.groq.com/openai/v1/audio/transcriptions";
 
@@ -24,10 +24,15 @@ impl GroqTranscriber {
 
 impl Transcriber for GroqTranscriber {
     fn transcribe(&self, pcm: &[f32]) -> Result<String> {
-        // Write PCM to a temp WAV so we can multipart-upload it.
+        // Write PCM to a temp WAV with .wav extension so Groq accepts it.
         let wav_bytes = pcm_to_wav_bytes(pcm)?;
-        let mut tmp = NamedTempFile::new().map_err(|e| AppError::Transcription(e.to_string()))?;
+        let mut tmp = TempBuilder::new()
+            .suffix(".wav")
+            .tempfile()
+            .map_err(|e| AppError::Transcription(e.to_string()))?;
         tmp.write_all(&wav_bytes)
+            .map_err(|e| AppError::Transcription(e.to_string()))?;
+        tmp.flush()
             .map_err(|e| AppError::Transcription(e.to_string()))?;
         let tmp_path = tmp.path().to_owned();
 
@@ -41,6 +46,9 @@ impl Transcriber for GroqTranscriber {
             .map_err(|e| AppError::Transcription(e.to_string()))?
             .text("model", self.model.clone())
             .text("response_format", "json");
+
+        // Keep tmp alive until after the request so the file isn't deleted early.
+        let _tmp = tmp;
 
         let response = client
             .post(GROQ_TRANSCRIPTION_URL)
