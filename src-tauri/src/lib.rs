@@ -1,13 +1,9 @@
+pub mod commands;
 pub mod errors;
 pub mod settings;
 
 use tauri::Manager;
 use tracing_subscriber::{fmt, EnvFilter};
-
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -46,7 +42,11 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![
+            commands::get_settings,
+            commands::save_settings,
+            commands::get_devices,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
