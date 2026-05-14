@@ -16,6 +16,7 @@ use tracing_subscriber::{fmt, EnvFilter};
 pub fn run() {
     tauri::Builder::default()
         .manage(RecordingState::default())
+        .manage(models::DownloadState::default())
         .setup(|app| {
             let log_dir = app
                 .path()
@@ -65,12 +66,17 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             commands::get_settings,
             commands::save_settings,
             commands::get_devices,
             commands::start_recording,
             commands::stop_recording,
+            models::get_model_manifest,
+            models::download_model,
+            models::cancel_download,
+            models::validate_model,
         ])
         .on_window_event(|window, event| {
             if window.label() == "main" {
