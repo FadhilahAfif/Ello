@@ -1,4 +1,5 @@
 pub mod cloud;
+pub mod local;
 
 use crate::errors::Result;
 

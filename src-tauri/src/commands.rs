@@ -2,6 +2,7 @@ use crate::audio::{enumerate_devices, AudioSource, MicSource};
 use crate::errors::{AppError, Result};
 use crate::settings::{AppSettings, SettingsManager};
 use crate::transcribe::cloud::GroqTranscriber;
+use crate::transcribe::local::LocalWhisperTranscriber;
 use crate::transcribe::Transcriber;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
@@ -111,10 +112,11 @@ pub fn stop_recording(app: AppHandle, state: State<RecordingState>) -> Result<Tr
             transcriber.transcribe(&pcm)?
         }
         crate::settings::TranscriptionMode::Local => {
-            // Local Whisper is Phase 2 task 4 — placeholder until implemented.
-            return Err(AppError::Transcription(
-                "Local transcription not yet implemented".to_string(),
-            ));
+            let model_path = settings.local_model_path.ok_or_else(|| {
+                AppError::Transcription("Local model path not configured".to_string())
+            })?;
+            let transcriber = LocalWhisperTranscriber::new(model_path, settings.language.clone());
+            transcriber.transcribe(&pcm)?
         }
     };
 

@@ -15,6 +15,8 @@ pub struct AppSettings {
     pub hotkey_mode: HotkeyMode,
     pub autostart_enabled: bool,
     pub mic_device_id: Option<String>,
+    pub local_model_path: Option<String>,
+    pub language: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
@@ -43,6 +45,8 @@ impl Default for AppSettings {
             hotkey_mode: HotkeyMode::default(),
             autostart_enabled: false,
             mic_device_id: None,
+            local_model_path: None,
+            language: None,
         }
     }
 }
