@@ -37,11 +37,10 @@ pub fn enumerate_devices() -> Result<Vec<DeviceInfo>> {
         .input_devices()
         .map_err(|e| AppError::Audio(e.to_string()))?
         .filter_map(|d| d.name().ok())
-        .enumerate()
-        .map(|(i, name)| {
+        .map(|name| {
             let is_default = name == default_name;
             DeviceInfo {
-                id: i.to_string(),
+                id: name.clone(),
                 name: name.clone(),
                 is_default,
             }
