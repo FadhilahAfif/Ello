@@ -7,6 +7,7 @@ import "./App.css";
 
 type TranscriptionMode = "cloud" | "local";
 type HotkeyMode = "toggle" | "pushToTalk";
+type RecordingStatus = "idle" | "recording" | "transcribing";
 
 interface AppSettings {
   schemaVersion: number;
@@ -50,8 +51,7 @@ export default function App() {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [status, setStatus] = useState<RecordingStatus>("idle");
   const [lastTranscript, setLastTranscript] = useState<string | null>(null);
 
   // Load settings and devices on mount
@@ -69,35 +69,43 @@ export default function App() {
 
   // Subscribe to backend events
   useEffect(() => {
+    let mounted = true;
     const unlisteners: Array<() => void> = [];
 
-    listen("recording-started", () => {
-      setIsRecording(true);
-      setIsTranscribing(false);
-      setError(null);
-    }).then((u) => unlisteners.push(u));
+    Promise.all([
+      listen("recording-started", () => {
+        setStatus("recording");
+        setLastTranscript(null);
+        setError(null);
+      }),
+      listen("recording-stopped", () => {
+        setStatus("transcribing");
+      }),
+      listen("transcription-started", () => {
+        setStatus("transcribing");
+      }),
+      listen<{ text: string }>("transcription-done", (event) => {
+        setStatus("idle");
+        setLastTranscript(event.payload.text);
+      }),
+      listen<{ message: string }>("app-error", (event) => {
+        setStatus("idle");
+        setError(event.payload.message);
+      }),
+    ])
+      .then((us) => {
+        if (!mounted) {
+          us.forEach((u) => u());
+        } else {
+          unlisteners.push(...us);
+        }
+      })
+      .catch((e) => setError(String(e)));
 
-    listen("recording-stopped", () => {
-      setIsRecording(false);
-      setIsTranscribing(true);
-    }).then((u) => unlisteners.push(u));
-
-    listen("transcription-started", () => {
-      setIsTranscribing(true);
-    }).then((u) => unlisteners.push(u));
-
-    listen<{ text: string }>("transcription-done", (event) => {
-      setIsTranscribing(false);
-      setLastTranscript(event.payload.text);
-    }).then((u) => unlisteners.push(u));
-
-    listen<{ message: string }>("app-error", (event) => {
-      setIsRecording(false);
-      setIsTranscribing(false);
-      setError(event.payload.message);
-    }).then((u) => unlisteners.push(u));
-
-    return () => unlisteners.forEach((u) => u());
+    return () => {
+      mounted = false;
+      unlisteners.forEach((u) => u());
+    };
   }, []);
 
   const patch = useCallback(<K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
@@ -125,14 +133,12 @@ export default function App() {
       <header className="app-header">
         <h1 className="app-title">Ello</h1>
         <div className="status-badge">
-          <span className={`status-dot${isRecording ? " recording" : isTranscribing ? " transcribing" : ""}`} />
-          <span>{isRecording ? "Recording…" : isTranscribing ? "Transcribing…" : "Idle"}</span>
+          <span className={`status-dot${status !== "idle" ? ` ${status}` : ""}`} />
+          <span>{status === "recording" ? "Recording…" : status === "transcribing" ? "Transcribing…" : "Idle"}</span>
         </div>
-        {lastTranscript && (
-          <p className="last-transcript" aria-live="polite">
-            {lastTranscript}
-          </p>
-        )}
+        <p className="last-transcript" aria-live="polite" aria-atomic="true">
+          {lastTranscript ?? ""}
+        </p>
       </header>
 
       {/* Error banner */}
@@ -238,6 +244,7 @@ export default function App() {
           </button>
         </div>
         <div className="hotkey-display">
+          {/* TODO: read from settings when hotkey becomes configurable */}
           <span className="hotkey-badge">Alt+Shift+D</span>
         </div>
       </section>
