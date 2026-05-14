@@ -17,6 +17,7 @@ pub struct AppSettings {
     pub mic_device_id: Option<String>,
     pub local_model_path: Option<String>,
     pub language: Option<String>,
+    pub hotkey: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
@@ -47,6 +48,7 @@ impl Default for AppSettings {
             mic_device_id: None,
             local_model_path: None,
             language: None,
+            hotkey: crate::hotkey::DEFAULT_HOTKEY.to_string(),
         }
     }
 }

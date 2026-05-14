@@ -12,6 +12,8 @@ pub fn register_hotkeys(app: &AppHandle) -> Result<(), AppError> {
         .get_settings()
         .map_err(|e| AppError::Hotkey(e.to_string()))?;
 
+    let hotkey = settings.hotkey.clone();
+
     // NOTE: hotkey_mode is captured at registration time. If the user changes
     // the hotkey mode in settings, call unregister_hotkeys + register_hotkeys
     // to pick up the new mode. The app currently requires a restart for this.
@@ -19,7 +21,7 @@ pub fn register_hotkeys(app: &AppHandle) -> Result<(), AppError> {
     let app_clone = app.clone();
 
     app.global_shortcut()
-        .on_shortcut(DEFAULT_HOTKEY, move |_app, _shortcut, event| {
+        .on_shortcut(hotkey.as_str(), move |_app, _shortcut, event| {
             let state = app_clone.state::<RecordingState>();
             match hotkey_mode {
                 HotkeyMode::Toggle => {
@@ -54,20 +56,25 @@ pub fn register_hotkeys(app: &AppHandle) -> Result<(), AppError> {
                 }
             }
         })
-        .map_err(|e| {
-            AppError::Hotkey(format!(
-                "Failed to register hotkey {}: {}",
-                DEFAULT_HOTKEY, e
-            ))
-        })?;
+        .map_err(|e| AppError::Hotkey(format!("Failed to register hotkey {}: {}", hotkey, e)))?;
 
-    tracing::info!("Registered hotkey: {}", DEFAULT_HOTKEY);
+    tracing::info!("Registered hotkey: {}", hotkey);
     Ok(())
 }
 
-/// Unregisters the global hotkey. Call this before re-registering after a
-/// settings change. The OS reclaims shortcuts on process exit automatically.
-#[allow(dead_code)]
+/// Unregisters the currently configured hotkey.
 pub fn unregister_hotkeys(app: &AppHandle) {
-    let _ = app.global_shortcut().unregister(DEFAULT_HOTKEY);
+    if let Ok(settings) = SettingsManager::new(app.clone()).get_settings() {
+        let _ = app.global_shortcut().unregister(settings.hotkey.as_str());
+    } else {
+        // Fallback: try to unregister the default
+        let _ = app.global_shortcut().unregister(DEFAULT_HOTKEY);
+    }
+}
+
+/// Unregisters the old hotkey and registers the new one from current settings.
+/// Call this after saving settings that may have changed the hotkey or mode.
+pub fn reregister_hotkeys(app: &AppHandle, old_hotkey: &str) -> Result<(), AppError> {
+    let _ = app.global_shortcut().unregister(old_hotkey);
+    register_hotkeys(app)
 }

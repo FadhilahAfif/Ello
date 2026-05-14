@@ -43,7 +43,26 @@ pub fn get_settings(app: AppHandle) -> Result<crate::settings::AppSettings> {
 
 #[tauri::command]
 pub fn save_settings(app: AppHandle, settings: crate::settings::AppSettings) -> Result<()> {
-    SettingsManager::new(app).save_settings(&settings)
+    // Read the old hotkey before overwriting so we can unregister it
+    let old_hotkey = SettingsManager::new(app.clone())
+        .get_settings()
+        .map(|s| s.hotkey)
+        .unwrap_or_else(|_| crate::hotkey::DEFAULT_HOTKEY.to_string());
+
+    SettingsManager::new(app.clone()).save_settings(&settings)?;
+
+    // Re-register hotkey so mode and binding changes take effect immediately
+    if let Err(e) = crate::hotkey::reregister_hotkeys(&app, &old_hotkey) {
+        tracing::warn!("Failed to re-register hotkey after settings save: {}", e);
+        if let Err(emit_err) = app.emit(
+            "app-error",
+            serde_json::json!({ "message": format!("Hotkey registration failed: {}", e) }),
+        ) {
+            tracing::warn!("Failed to emit hotkey error: {}", emit_err);
+        }
+    }
+
+    Ok(())
 }
 
 #[tauri::command]

@@ -33,6 +33,7 @@ interface AppSettings {
   autostartEnabled: boolean;
   micDeviceId: string | null;
   localModelPath: string | null;
+  hotkey: string;
 }
 
 interface AudioDevice {
@@ -52,6 +53,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   autostartEnabled: false,
   micDeviceId: null,
   localModelPath: null,
+  hotkey: "Alt+Shift+D",
 };
 
 const CLOUD_MODELS = [
@@ -72,6 +74,7 @@ export default function App() {
   const [lastTranscript, setLastTranscript] = useState<string | null>(null);
   const [manifest, setManifest] = useState<ModelInfo[]>([]);
   const [modelStatuses, setModelStatuses] = useState<Record<string, ModelStatus>>({});
+  const [capturingHotkey, setCapturingHotkey] = useState(false);
 
   // Load settings and devices on mount
   useEffect(() => {
@@ -170,6 +173,48 @@ export default function App() {
       setSaving(false);
     }
   };
+
+  const handleHotkeyKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (!capturingHotkey) return;
+      e.preventDefault();
+
+      const modifiers: string[] = [];
+      if (e.ctrlKey) modifiers.push("Ctrl");
+      if (e.altKey) modifiers.push("Alt");
+      if (e.shiftKey) modifiers.push("Shift");
+      if (e.metaKey) modifiers.push("Super");
+
+      // Ignore bare modifier keypresses
+      if (["Control", "Alt", "Shift", "Meta"].includes(e.key)) return;
+
+      // Escape cancels capture without changing the hotkey
+      if (e.key === "Escape") {
+        setCapturingHotkey(false);
+        return;
+      }
+
+      // Map browser key names to tauri-plugin-global-shortcut format
+      const keyMap: Record<string, string> = {
+        " ": "Space",
+        ArrowUp: "Up",
+        ArrowDown: "Down",
+        ArrowLeft: "Left",
+        ArrowRight: "Right",
+        Escape: "Escape",
+        Enter: "Return",
+        Backspace: "Backspace",
+        Delete: "Delete",
+        Tab: "Tab",
+      };
+      const key = keyMap[e.key] ?? (e.key.length === 1 ? e.key.toUpperCase() : e.key);
+
+      const combo = [...modifiers, key].join("+");
+      patch("hotkey", combo);
+      setCapturingHotkey(false);
+    },
+    [capturingHotkey, patch]
+  );
 
   const [selectedModelId, setSelectedModelId] = useState<string>("small");
 
@@ -434,8 +479,19 @@ export default function App() {
           </button>
         </div>
         <div className="hotkey-display">
-          {/* TODO: read from settings when hotkey becomes configurable */}
-          <span className="hotkey-badge">Alt+Shift+D</span>
+          <button
+            className={`hotkey-badge${capturingHotkey ? " capturing" : ""}`}
+            onClick={() => setCapturingHotkey(true)}
+            onKeyDown={handleHotkeyKeyDown}
+            onBlur={() => setCapturingHotkey(false)}
+            aria-label="Click to rebind hotkey"
+            title="Click then press your desired key combination"
+          >
+            {capturingHotkey ? "Press keys…" : settings.hotkey}
+          </button>
+          {capturingHotkey && (
+            <span className="hotkey-hint">Press any key combo, Esc to cancel</span>
+          )}
         </div>
       </section>
 
