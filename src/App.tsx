@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import "./App.css";
 
 // ── Types (mirror src-tauri/src/settings.rs) ────────────────────────────────
@@ -49,7 +50,9 @@ export default function App() {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isRecording] = useState(false); // wired in Phase 3
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [lastTranscript, setLastTranscript] = useState<string | null>(null);
 
   // Load settings and devices on mount
   useEffect(() => {
@@ -62,6 +65,39 @@ export default function App() {
         setDevices(d);
       })
       .catch((e) => setError(String(e)));
+  }, []);
+
+  // Subscribe to backend events
+  useEffect(() => {
+    const unlisteners: Array<() => void> = [];
+
+    listen("recording-started", () => {
+      setIsRecording(true);
+      setIsTranscribing(false);
+      setError(null);
+    }).then((u) => unlisteners.push(u));
+
+    listen("recording-stopped", () => {
+      setIsRecording(false);
+      setIsTranscribing(true);
+    }).then((u) => unlisteners.push(u));
+
+    listen("transcription-started", () => {
+      setIsTranscribing(true);
+    }).then((u) => unlisteners.push(u));
+
+    listen<{ text: string }>("transcription-done", (event) => {
+      setIsTranscribing(false);
+      setLastTranscript(event.payload.text);
+    }).then((u) => unlisteners.push(u));
+
+    listen<{ message: string }>("app-error", (event) => {
+      setIsRecording(false);
+      setIsTranscribing(false);
+      setError(event.payload.message);
+    }).then((u) => unlisteners.push(u));
+
+    return () => unlisteners.forEach((u) => u());
   }, []);
 
   const patch = useCallback(<K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
@@ -89,9 +125,14 @@ export default function App() {
       <header className="app-header">
         <h1 className="app-title">Ello</h1>
         <div className="status-badge">
-          <span className={`status-dot${isRecording ? " recording" : ""}`} />
-          <span>{isRecording ? "Recording…" : "Idle"}</span>
+          <span className={`status-dot${isRecording ? " recording" : isTranscribing ? " transcribing" : ""}`} />
+          <span>{isRecording ? "Recording…" : isTranscribing ? "Transcribing…" : "Idle"}</span>
         </div>
+        {lastTranscript && (
+          <p className="last-transcript" aria-live="polite">
+            {lastTranscript}
+          </p>
+        )}
       </header>
 
       {/* Error banner */}
@@ -197,10 +238,7 @@ export default function App() {
           </button>
         </div>
         <div className="hotkey-display">
-          <span className="hotkey-badge">Ctrl+Shift+Space</span>
-          <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-            — configurable in Phase 3
-          </span>
+          <span className="hotkey-badge">Alt+Shift+D</span>
         </div>
       </section>
 
