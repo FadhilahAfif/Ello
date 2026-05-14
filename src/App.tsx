@@ -197,21 +197,7 @@ export default function App() {
     setDirty(true);
   };
 
-  const handleBrowseModel = async () => {
-    try {
-      const { open } = await import("@tauri-apps/plugin-dialog");
-      const file = await open({
-        directory: false,
-        multiple: false,
-        title: "Select Whisper model file",
-        filters: [{ name: "GGML model", extensions: ["bin"] }],
-      });
-      if (!file || Array.isArray(file)) return;
-      patch("localModelPath", file);
-    } catch (e) {
-      setError(String(e));
-    }
-  };
+
 
   return (
     <div className="app">
@@ -294,26 +280,11 @@ export default function App() {
       {/* Local Model — only shown in Local mode */}
       {settings.transcriptionMode === "local" && (
         <section className="card" aria-labelledby="model-title">
-          <span className="card-title" id="model-title">Local Model</span>
+          <span className="card-title" id="model-title">Model</span>
 
-          {/* Active model path with Browse button */}
+          {/* Model picker / downloader */}
           <div className="field">
-            <label htmlFor="local-model-path">Model file</label>
-            <div className="path-row">
-              <span className="path-display" title={settings.localModelPath ?? ""}>
-                {settings.localModelPath
-                  ? settings.localModelPath.split(/[\\/]/).pop()
-                  : "No model selected"}
-              </span>
-              <button className="btn-browse" onClick={handleBrowseModel}>
-                Browse…
-              </button>
-            </div>
-          </div>
-
-          {/* Download a model */}
-          <div className="field">
-            <label htmlFor="model-select">Download a model</label>
+            <label htmlFor="model-select">Select model</label>
             <select
               id="model-select"
               value={selectedModelId}
@@ -403,15 +374,14 @@ export default function App() {
                   <p className="model-installed-path" title={installedPath}>
                     ✓ {installedPath.split(/[\\/]/).pop()}
                   </p>
-                  {!isActive && (
+                  {!isActive ? (
                     <button
                       className="btn-use"
                       onClick={() => handleUseModel(installedPath)}
                     >
                       Use this model
                     </button>
-                  )}
-                  {isActive && (
+                  ) : (
                     <span className="model-active-label">Active</span>
                   )}
                 </div>
