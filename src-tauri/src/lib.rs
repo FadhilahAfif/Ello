@@ -2,6 +2,7 @@ pub mod audio;
 pub mod commands;
 pub mod errors;
 pub mod hotkey;
+pub mod models;
 pub mod output;
 pub mod settings;
 pub mod transcribe;
