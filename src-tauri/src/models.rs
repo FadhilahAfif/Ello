@@ -69,13 +69,13 @@ pub fn find_model(id: &str) -> Option<&'static ModelInfo> {
 // ── Download state ────────────────────────────────────────────────────────────
 
 pub struct DownloadState {
-    pub cancels: Mutex<HashMap<String, Arc<AtomicBool>>>,
+    pub cancels: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
 }
 
 impl Default for DownloadState {
     fn default() -> Self {
         Self {
-            cancels: Mutex::new(HashMap::new()),
+            cancels: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 }
@@ -129,7 +129,7 @@ pub fn download_model(
     state
         .cancels
         .lock()
-        .unwrap()
+        .map_err(|_| AppError::Model("Lock poisoned".into()))?
         .insert(id.clone(), Arc::clone(&cancel));
 
     let url = model.url.to_string();
@@ -138,6 +138,7 @@ pub fn download_model(
     let size_bytes = model.size_bytes;
     let dest_dir = PathBuf::from(dest_dir);
     let model_id = id.clone();
+    let cancels = Arc::clone(&state.cancels);
 
     std::thread::spawn(move || {
         let result = run_download(
@@ -153,6 +154,7 @@ pub fn download_model(
 
         match result {
             Ok(path) => {
+                cancels.lock().unwrap().remove(&model_id);
                 if let Ok(mut settings) =
                     crate::settings::SettingsManager::new(app.clone()).get_settings()
                 {
@@ -170,7 +172,8 @@ pub fn download_model(
                     tracing::warn!("Failed to emit model-download-done: {}", e);
                 }
             }
-            Err(e) if e.to_string().contains("cancelled") => {
+            Err(crate::errors::AppError::Cancelled) => {
+                cancels.lock().unwrap().remove(&model_id);
                 if let Err(emit_err) =
                     app.emit("model-download-cancelled", serde_json::json!({ "id": model_id }))
                 {
@@ -178,6 +181,7 @@ pub fn download_model(
                 }
             }
             Err(e) => {
+                cancels.lock().unwrap().remove(&model_id);
                 tracing::error!("Model download failed: {}", e);
                 if let Err(emit_err) = app.emit(
                     "model-download-error",
@@ -194,7 +198,7 @@ pub fn download_model(
 
 #[tauri::command]
 pub fn cancel_download(state: State<DownloadState>, id: String) -> Result<()> {
-    let cancels = state.cancels.lock().unwrap();
+    let cancels = state.cancels.lock().map_err(|_| AppError::Model("Lock poisoned".into()))?;
     if let Some(flag) = cancels.get(&id) {
         flag.store(true, Ordering::SeqCst);
     }
@@ -213,7 +217,7 @@ pub fn validate_model(id: String, path: String) -> ModelValidationResult {
         }
     };
 
-    match validate_file(&path, model.sha1) {
+    match validate_file(std::path::Path::new(&path), model.sha1) {
         Ok(()) => ModelValidationResult {
             valid: true,
             error: None,
@@ -241,6 +245,9 @@ fn run_download(
     let part_path = dest_dir.join(format!("{}.part", filename));
     let final_path = dest_dir.join(filename);
 
+    std::fs::create_dir_all(dest_dir)
+        .map_err(|e| AppError::Model(format!("Cannot create directory: {}", e)))?;
+
     let client = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(3600))
         .build()
@@ -264,12 +271,13 @@ fn run_download(
 
     let mut downloaded: u64 = 0;
     let mut buf = vec![0u8; 65_536];
+    let mut last_emit = std::time::Instant::now();
 
     loop {
         if cancel.load(Ordering::SeqCst) {
             drop(file);
             let _ = std::fs::remove_file(&part_path);
-            return Err(AppError::Model("Download cancelled".to_string()));
+            return Err(AppError::Cancelled);
         }
 
         let n = response
@@ -285,20 +293,24 @@ fn run_download(
 
         downloaded += n as u64;
 
-        if let Err(e) = app.emit(
-            "model-download-progress",
-            serde_json::json!({
-                "id": model_id,
-                "downloaded": downloaded,
-                "total": total_bytes,
-            }),
-        ) {
-            tracing::warn!("Failed to emit model-download-progress: {}", e);
+        if last_emit.elapsed() >= std::time::Duration::from_millis(250) {
+            if let Err(e) = app.emit(
+                "model-download-progress",
+                serde_json::json!({
+                    "id": model_id,
+                    "downloaded": downloaded,
+                    "total": total_bytes,
+                }),
+            ) {
+                tracing::warn!("Failed to emit model-download-progress: {}", e);
+            }
+            last_emit = std::time::Instant::now();
         }
     }
 
     drop(file);
 
+    // Always emit a final progress event so the frontend sees 100%
     if let Err(e) = app.emit(
         "model-download-progress",
         serde_json::json!({
@@ -311,7 +323,7 @@ fn run_download(
         tracing::warn!("Failed to emit validating progress: {}", e);
     }
 
-    validate_file(&part_path.to_string_lossy(), sha1_expected).inspect_err(|_e| {
+    validate_file(&part_path, sha1_expected).inspect_err(|_e| {
         let _ = std::fs::remove_file(&part_path);
     })?;
 
@@ -321,7 +333,7 @@ fn run_download(
     Ok(final_path)
 }
 
-fn validate_file(path: &str, sha1_expected: &str) -> Result<()> {
+fn validate_file(path: &std::path::Path, sha1_expected: &str) -> Result<()> {
     let mut file = std::fs::File::open(path)
         .map_err(|e| AppError::Model(format!("Cannot open file for validation: {}", e)))?;
 
@@ -380,7 +392,7 @@ mod tests {
 
     #[test]
     fn validate_file_errors_on_missing_file() {
-        let result = validate_file("/nonexistent/path/model.bin", "abc123");
+        let result = validate_file(std::path::Path::new("/nonexistent/path/model.bin"), "abc123");
         assert!(result.is_err());
     }
 }

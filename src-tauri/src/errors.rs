@@ -20,6 +20,9 @@ pub enum AppError {
     #[error("Model error: {0}")]
     Model(String),
 
+    #[error("Operation cancelled")]
+    Cancelled,
+
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
