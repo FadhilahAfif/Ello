@@ -171,6 +171,8 @@ export default function App() {
     }
   };
 
+  const [selectedModelId, setSelectedModelId] = useState<string>("small");
+
   const handleDownload = async (modelId: string) => {
     try {
       const { open } = await import("@tauri-apps/plugin-dialog");
@@ -193,6 +195,22 @@ export default function App() {
   const handleUseModel = (path: string) => {
     setSettings((prev) => ({ ...prev, localModelPath: path }));
     setDirty(true);
+  };
+
+  const handleBrowseModel = async () => {
+    try {
+      const { open } = await import("@tauri-apps/plugin-dialog");
+      const file = await open({
+        directory: false,
+        multiple: false,
+        title: "Select Whisper model file",
+        filters: [{ name: "GGML model", extensions: ["bin"] }],
+      });
+      if (!file || Array.isArray(file)) return;
+      patch("localModelPath", file);
+    } catch (e) {
+      setError(String(e));
+    }
   };
 
   return (
@@ -273,95 +291,137 @@ export default function App() {
         )}
       </section>
 
-      {/* Local Model */}
-      <section className="card" aria-labelledby="model-title">
-        <span className="card-title" id="model-title">Local Model</span>
+      {/* Local Model — only shown in Local mode */}
+      {settings.transcriptionMode === "local" && (
+        <section className="card" aria-labelledby="model-title">
+          <span className="card-title" id="model-title">Local Model</span>
 
-        <label className="field-label" htmlFor="local-model-path">
-          Model path
-        </label>
-        <input
-          id="local-model-path"
-          type="text"
-          className="text-input"
-          placeholder="Path to .bin file (optional)"
-          value={settings.localModelPath ?? ""}
-          onChange={(e) => patch("localModelPath", e.target.value || null)}
-        />
+          {/* Active model path with Browse button */}
+          <div className="field">
+            <label htmlFor="local-model-path">Model file</label>
+            <div className="path-row">
+              <span className="path-display" title={settings.localModelPath ?? ""}>
+                {settings.localModelPath
+                  ? settings.localModelPath.split(/[\\/]/).pop()
+                  : "No model selected"}
+              </span>
+              <button className="btn-browse" onClick={handleBrowseModel}>
+                Browse…
+              </button>
+            </div>
+          </div>
 
-        <div className="model-list" role="list">
-          {manifest.map((model) => {
-            const st: ModelStatus = modelStatuses[model.id] ?? { kind: "idle" };
-            const installedPath = st.kind === "installed" ? st.path : null;
-            const isActive = !!installedPath && settings.localModelPath === installedPath;
+          {/* Download a model */}
+          <div className="field">
+            <label htmlFor="model-select">Download a model</label>
+            <select
+              id="model-select"
+              value={selectedModelId}
+              onChange={(e) => setSelectedModelId(e.target.value)}
+            >
+              {manifest.map((m) => {
+                const st: ModelStatus = modelStatuses[m.id] ?? { kind: "idle" };
+                const suffix =
+                  st.kind === "installed"
+                    ? " ✓"
+                    : st.kind === "downloading" || st.kind === "validating"
+                    ? " ↓"
+                    : "";
+                return (
+                  <option key={m.id} value={m.id}>
+                    {m.name} — {(m.sizeBytes / 1_073_741_824).toFixed(1)} GB{suffix}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
 
-            return (
-              <div
-                key={model.id}
-                className={`model-row${isActive ? " active" : ""}`}
-                role="listitem"
-              >
-                <div className="model-info">
-                  <span className="model-name">{model.name}</span>
-                  <span className="model-size">
-                    {(model.sizeBytes / 1_073_741_824).toFixed(1)} GB
-                  </span>
-                </div>
+          {/* Per-selected-model action */}
+          {(() => {
+            const st: ModelStatus = modelStatuses[selectedModelId] ?? { kind: "idle" };
+            const selectedModel = manifest.find((m) => m.id === selectedModelId);
 
-                <div className="model-action">
-                  {st.kind === "idle" && (
-                    <button onClick={() => handleDownload(model.id)}>Download</button>
-                  )}
-
-                  {st.kind === "downloading" && (
-                    <>
-                      <div
-                        className="progress-bar"
-                        role="progressbar"
-                        aria-label={`Downloading ${model.name}`}
-                        aria-valuenow={Math.round((st.downloaded / st.total) * 100)}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                      >
-                        <div
-                          className="progress-fill"
-                          style={{ width: `${Math.round((st.downloaded / st.total) * 100)}%` }}
-                        />
-                      </div>
-                      <span className="progress-label">
-                        {Math.round((st.downloaded / st.total) * 100)}%
-                      </span>
-                      <button onClick={() => handleCancelDownload(model.id)}>Cancel</button>
-                    </>
-                  )}
-
-                  {st.kind === "validating" && (
-                    <span className="model-validating">Validating…</span>
-                  )}
-
-                  {st.kind === "installed" && (
-                    <>
-                      <span className="model-installed" aria-label="Installed">✓</span>
-                      {!isActive ? (
-                        <button onClick={() => handleUseModel(st.path)}>Use</button>
-                      ) : (
-                        <span className="model-active-label">Active</span>
-                      )}
-                    </>
-                  )}
-
+            if (st.kind === "idle" || st.kind === "error") {
+              return (
+                <div className="model-download-action">
                   {st.kind === "error" && (
-                    <>
-                      <span className="model-error" title={st.message}>Error</span>
-                      <button onClick={() => handleDownload(model.id)}>Retry</button>
-                    </>
+                    <p className="model-error-msg" role="alert">{st.message}</p>
+                  )}
+                  <button
+                    className="btn-download"
+                    onClick={() => handleDownload(selectedModelId)}
+                  >
+                    {st.kind === "error" ? "Retry Download" : "Download"}
+                  </button>
+                </div>
+              );
+            }
+
+            if (st.kind === "downloading") {
+              const pct = Math.round((st.downloaded / st.total) * 100);
+              const downloadedMb = (st.downloaded / 1_048_576).toFixed(0);
+              const totalMb = (st.total / 1_048_576).toFixed(0);
+              return (
+                <div className="model-download-action">
+                  <div
+                    className="progress-bar"
+                    role="progressbar"
+                    aria-label={`Downloading ${selectedModel?.name ?? selectedModelId}`}
+                    aria-valuenow={pct}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  >
+                    <div className="progress-fill" style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="progress-meta">
+                    <span>{pct}%</span>
+                    <span>{downloadedMb} / {totalMb} MB</span>
+                  </div>
+                  <button
+                    className="btn-cancel"
+                    onClick={() => handleCancelDownload(selectedModelId)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              );
+            }
+
+            if (st.kind === "validating") {
+              return (
+                <div className="model-download-action">
+                  <p className="model-validating">Validating checksum…</p>
+                </div>
+              );
+            }
+
+            if (st.kind === "installed") {
+              const installedPath = st.path;
+              const isActive = settings.localModelPath === installedPath;
+              return (
+                <div className="model-download-action">
+                  <p className="model-installed-path" title={installedPath}>
+                    ✓ {installedPath.split(/[\\/]/).pop()}
+                  </p>
+                  {!isActive && (
+                    <button
+                      className="btn-use"
+                      onClick={() => handleUseModel(installedPath)}
+                    >
+                      Use this model
+                    </button>
+                  )}
+                  {isActive && (
+                    <span className="model-active-label">Active</span>
                   )}
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+              );
+            }
+
+            return null;
+          })()}
+        </section>
+      )}
 
       {/* Audio device */}
       <section className="card" aria-labelledby="audio-title">
