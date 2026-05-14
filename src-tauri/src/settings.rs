@@ -72,8 +72,8 @@ impl SettingsManager {
     pub fn get_settings(&self) -> Result<AppSettings> {
         let store = self
             .app_handle
-            .get_store(SETTINGS_FILE)
-            .ok_or_else(|| AppError::Settings("Store not found".to_string()))?;
+            .store(SETTINGS_FILE)
+            .map_err(|e| AppError::Settings(e.to_string()))?;
 
         if let Some(val) = store.get("settings") {
             serde_json::from_value(val).map_err(|e| AppError::Settings(e.to_string()))
@@ -85,8 +85,8 @@ impl SettingsManager {
     pub fn save_settings(&self, settings: &AppSettings) -> Result<()> {
         let store = self
             .app_handle
-            .get_store(SETTINGS_FILE)
-            .ok_or_else(|| AppError::Settings("Store not found".to_string()))?;
+            .store(SETTINGS_FILE)
+            .map_err(|e| AppError::Settings(e.to_string()))?;
 
         let val = serde_json::to_value(settings).map_err(|e| AppError::Settings(e.to_string()))?;
 

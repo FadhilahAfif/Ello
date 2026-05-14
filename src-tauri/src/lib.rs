@@ -1,13 +1,17 @@
+pub mod audio;
 pub mod commands;
 pub mod errors;
 pub mod settings;
+pub mod transcribe;
 
+use crate::commands::RecordingState;
 use tauri::Manager;
 use tracing_subscriber::{fmt, EnvFilter};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(RecordingState::default())
         .setup(|app| {
             let log_dir = app
                 .path()
@@ -46,6 +50,8 @@ pub fn run() {
             commands::get_settings,
             commands::save_settings,
             commands::get_devices,
+            commands::start_recording,
+            commands::stop_recording,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
