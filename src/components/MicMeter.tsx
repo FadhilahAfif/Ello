@@ -81,7 +81,11 @@ export function MicMeter({ active, height = 36, bars = 24, className = "" }: Mic
         <div
           key={i}
           ref={(el) => {
-            if (el) barRefs.current[i] = el;
+            if (el) {
+              barRefs.current[i] = el;
+            } else {
+              delete barRefs.current[i];
+            }
           }}
           style={{
             width: 2,
