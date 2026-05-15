@@ -44,6 +44,16 @@ Ello is a Windows-first Tauri 2 dictation app. It records audio from a global ho
 - Use `thiserror`-style typed errors for Rust backend failures.
 - Never log API keys, raw audio, or transcript contents.
 
+## Frontend Conventions
+- Read `DESIGN.md` before changing any UI. It defines tokens, scale, and component patterns.
+- Use the named spacing tokens (`px-[var(--space-N)]`) over the Tailwind numeric scale.
+- Never write a global `*` reset in `src/index.css`. Tailwind preflight already handles it; a custom unlayered `*` rule beats every layered utility and silently drops spacing across the app. If a reset is needed, put it in `@layer base { ... }`.
+- Use `lucide-react` for icons (16px stroke 1.6 default). No unicode dingbats.
+- Use `focus-visible:` rings, not `focus:`.
+- Use `--font-mono` for hotkeys, file paths, transcripts, and metadata; `--font-sans` for UI copy.
+- One amber element per view ideally, two maximum. Never use amber as a background fill.
+- Empty states get a designed empty state, not "Coming soon."
+
 ## Architecture Rules
 - Keep audio capture, transcription, and output as separate layers.
 - Support both local files and microphone input for the audio source.

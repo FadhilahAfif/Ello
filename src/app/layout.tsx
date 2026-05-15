@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type ComponentType } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { ToastContainer } from "../components/ui/Toast";
 import { useRoute } from "./router";
@@ -16,7 +16,9 @@ import { Settings } from "../pages/Settings";
 import { About } from "../pages/About";
 import { Onboarding } from "../pages/Onboarding";
 
-const PAGES = {
+import type { Route } from "./router";
+
+const PAGES: Record<Route, ComponentType> = {
   "/dashboard": Dashboard,
   "/history": History,
   "/vocabulary": Vocabulary,
@@ -24,6 +26,20 @@ const PAGES = {
   "/settings": Settings,
   "/about": About,
   "/onboarding": Onboarding,
+};
+
+/**
+ * Per-route content width. Wider for workspaces (Settings two-column),
+ * narrower for content-led pages. Removes the "576px-flush-left" problem.
+ */
+const CONTAINER_WIDTH: Record<Route, string> = {
+  "/dashboard": "max-w-[880px]",
+  "/history": "max-w-[880px]",
+  "/vocabulary": "max-w-[880px]",
+  "/models": "max-w-[720px]",
+  "/settings": "max-w-[1080px]",
+  "/about": "max-w-[640px]",
+  "/onboarding": "max-w-[640px]",
 };
 
 export function AppLayout() {
@@ -57,12 +73,19 @@ export function AppLayout() {
   }, []);
 
   const Page = PAGES[route] ?? Dashboard;
+  const widthClass = CONTAINER_WIDTH[route] ?? "max-w-[880px]";
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--bg-base)]">
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
-        <Page />
+        <div
+          className={`mx-auto px-[var(--space-6)] sm:px-[var(--space-10)] py-[var(--space-10)] ${widthClass}`}
+          key={route}
+          style={{ animation: "fade-up 240ms var(--ease-out-quart)" }}
+        >
+          <Page />
+        </div>
       </main>
       <ToastContainer />
     </div>
