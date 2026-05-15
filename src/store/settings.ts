@@ -4,8 +4,24 @@ export type TranscriptionMode = "cloud" | "local";
 export type HotkeyMode = "toggle" | "pushToTalk";
 export type RecordingStatus = "idle" | "recording" | "transcribing";
 
+export interface ModelInfo {
+  id: string;
+  name: string;
+  filename: string;
+  sizeBytes: number;
+  sha1: string;
+}
+
+export type ModelStatus =
+  | { kind: "idle" }
+  | { kind: "downloading"; downloaded: number; total: number }
+  | { kind: "validating" }
+  | { kind: "installed"; path: string }
+  | { kind: "error"; message: string };
+
 export interface AppSettings {
   schemaVersion: number;
+  // Security: in-memory only — never log, serialize to UI, or pass as prop
   groqApiKey: string | null;
   cloudModel: string;
   transcriptionMode: TranscriptionMode;
@@ -46,7 +62,7 @@ interface SettingsStore {
   patchSetting: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void;
   setStatus: (s: RecordingStatus) => void;
   setLastTranscript: (t: string | null) => void;
-  setDirty: (d: boolean) => void;
+  resetSettings: () => void;
   setError: (e: string | null) => void;
 }
 
@@ -63,6 +79,6 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     set((state) => ({ settings: { ...state.settings, [key]: value }, dirty: true, error: null })),
   setStatus: (s) => set({ status: s }),
   setLastTranscript: (t) => set({ lastTranscript: t }),
-  setDirty: (d) => set({ dirty: d }),
+  resetSettings: () => set({ settings: DEFAULT_SETTINGS, dirty: false, error: null }),
   setError: (e) => set({ error: e }),
 }));
