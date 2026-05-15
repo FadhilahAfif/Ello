@@ -44,14 +44,16 @@ const CONTAINER_WIDTH: Record<Route, string> = {
 
 export function AppLayout() {
   const route = useRoute();
-  const { setSettings, setDevices, setStatus, setLastTranscript, setError } = useSettingsStore();
 
   useEffect(() => {
+    const { setSettings, setDevices, setError } = useSettingsStore.getState();
+
     getSettings().then(setSettings).catch((e) => setError(String(e)));
     getDevices().then((d) => { if (d.length > 0) setDevices(d); }).catch(console.error);
   }, []);
 
   useEffect(() => {
+    const { setStatus, setLastTranscript, setError } = useSettingsStore.getState();
     let mounted = true;
     const unlisteners: Array<() => void> = [];
 
