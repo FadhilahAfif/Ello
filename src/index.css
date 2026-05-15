@@ -2,30 +2,18 @@
 
 @font-face {
   font-family: 'Geist';
-  src: url('../node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2') format('woff2');
+  src: url('./assets/fonts/Geist-Variable.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
-}
-
-@font-face {
-  font-family: 'Geist';
-  src: url('../node_modules/geist/dist/fonts/geist-sans/Geist-Italic[wght].woff2') format('woff2');
-  font-weight: 100 900;
-  font-style: italic;
+  font-display: swap;
 }
 
 @font-face {
   font-family: 'Geist Mono';
-  src: url('../node_modules/geist/dist/fonts/geist-mono/GeistMono-Variable.woff2') format('woff2');
+  src: url('./assets/fonts/GeistMono-Variable.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
-}
-
-@font-face {
-  font-family: 'Geist Mono';
-  src: url('../node_modules/geist/dist/fonts/geist-mono/GeistMono-Italic[wght].woff2') format('woff2');
-  font-weight: 100 900;
-  font-style: italic;
+  font-display: swap;
 }
 
 :root {
@@ -53,7 +41,11 @@
   --radius-full: 9999px;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
   background: var(--bg-base);
