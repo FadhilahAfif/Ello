@@ -4,7 +4,7 @@ interface ProgressProps {
   label?: string;
 }
 
-export function Progress({ value, max = 100, label }: ProgressProps) {
+export function Progress({ value, max = 100, label = "Progress" }: ProgressProps) {
   const pct = Math.round((value / max) * 100);
   return (
     <div

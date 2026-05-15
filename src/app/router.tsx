@@ -1,21 +1,20 @@
 import { useState, useEffect } from "react";
 
-export type Route =
-  | "/dashboard"
-  | "/history"
-  | "/vocabulary"
-  | "/models"
-  | "/settings"
-  | "/about"
-  | "/onboarding";
+export const ROUTES = [
+  "/dashboard",
+  "/history",
+  "/vocabulary",
+  "/models",
+  "/settings",
+  "/about",
+  "/onboarding",
+] as const;
+
+export type Route = typeof ROUTES[number];
 
 function getRoute(): Route {
-  const hash = window.location.hash.replace("#", "") as Route;
-  const valid: Route[] = [
-    "/dashboard", "/history", "/vocabulary",
-    "/models", "/settings", "/about", "/onboarding",
-  ];
-  return valid.includes(hash) ? hash : "/dashboard";
+  const hash = window.location.hash.replace("#", "");
+  return (ROUTES as readonly string[]).includes(hash) ? (hash as Route) : "/dashboard";
 }
 
 export function navigate(route: Route) {
