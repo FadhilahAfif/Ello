@@ -1,5 +1,6 @@
 import { useEffect, type ComponentType } from "react";
 import { Sidebar } from "../components/Sidebar";
+import { TitleBar } from "../components/TitleBar";
 import { ToastContainer } from "../components/ui/Toast";
 import { useRoute } from "./router";
 import { useSettingsStore } from "../store/settings";
@@ -78,17 +79,20 @@ export function AppLayout() {
   const widthClass = CONTAINER_WIDTH[route] ?? "max-w-[880px]";
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--bg-base)]">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        <div
-          className={`mx-auto px-[var(--space-6)] sm:px-[var(--space-10)] py-[var(--space-10)] ${widthClass}`}
-          key={route}
-          style={{ animation: "fade-up 240ms var(--ease-out-quart)" }}
-        >
-          <Page />
-        </div>
-      </main>
+    <div className="flex flex-col h-screen overflow-hidden bg-[var(--bg-base)]">
+      <TitleBar />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto">
+          <div
+            className={`mx-auto px-[var(--space-6)] sm:px-[var(--space-10)] py-[var(--space-10)] ${widthClass}`}
+            key={route}
+            style={{ animation: "fade-up 240ms var(--ease-out-quart)" }}
+          >
+            <Page />
+          </div>
+        </main>
+      </div>
       <ToastContainer />
     </div>
   );
