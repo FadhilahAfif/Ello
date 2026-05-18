@@ -238,7 +238,9 @@ pub fn check_installed_in_dir(dir: &Path) -> HashMap<String, String> {
     for model in MODELS {
         let path = dir.join(model.filename);
         if path.is_file() {
-            result.insert(model.id.to_string(), path.to_string_lossy().to_string());
+            if let Some(s) = path.to_str() {
+                result.insert(model.id.to_string(), s.to_string());
+            }
         }
     }
     result

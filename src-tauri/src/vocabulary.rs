@@ -148,7 +148,12 @@ pub fn apply_rules(text: &str, rules: &[VocabularyRule]) -> String {
     result
 }
 
-fn replace_word_boundary(text: &str, term: &str, replacement: &str, case_sensitive: bool) -> String {
+fn replace_word_boundary(
+    text: &str,
+    term: &str,
+    replacement: &str,
+    case_sensitive: bool,
+) -> String {
     let mut result = String::with_capacity(text.len());
     let mut remaining = text;
     loop {

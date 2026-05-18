@@ -207,9 +207,13 @@ fn run_recording_pipeline(
         match db_state.lock() {
             Ok(conn) => {
                 let word_count = text.split_whitespace().count() as i64;
-                if let Err(e) =
-                    crate::history::insert_transcript(&conn, &text, &mode_str, &model_str, duration_ms)
-                {
+                if let Err(e) = crate::history::insert_transcript(
+                    &conn,
+                    &text,
+                    &mode_str,
+                    &model_str,
+                    duration_ms,
+                ) {
                     tracing::warn!("Failed to insert transcript: {}", e);
                 }
                 if settings.stats_enabled {

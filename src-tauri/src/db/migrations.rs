@@ -1,5 +1,5 @@
-use rusqlite::Connection;
 use crate::errors::{AppError, Result};
+use rusqlite::Connection;
 
 pub fn run(conn: &Connection) -> Result<()> {
     let version = get_version(conn)?;

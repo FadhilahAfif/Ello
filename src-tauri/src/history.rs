@@ -85,8 +85,10 @@ pub fn history_delete(db: State<Db>, id: i64) -> Result<()> {
 #[tauri::command]
 pub fn history_clear(db: State<Db>) -> Result<()> {
     let conn = db.lock()?;
-    conn.execute_batch("DELETE FROM transcripts; INSERT INTO transcripts_fts(transcripts_fts) VALUES ('rebuild');")
-        .map_err(|e| AppError::Database(e.to_string()))?;
+    conn.execute_batch(
+        "DELETE FROM transcripts; INSERT INTO transcripts_fts(transcripts_fts) VALUES ('rebuild');",
+    )
+    .map_err(|e| AppError::Database(e.to_string()))?;
     Ok(())
 }
 
@@ -111,8 +113,9 @@ pub fn history_export(db: State<Db>, ids: Vec<i64>, format: String) -> Result<St
     }
 
     let output = match format.as_str() {
-        "json" => serde_json::to_string_pretty(&rows)
-            .map_err(|e| AppError::Database(e.to_string()))?,
+        "json" => {
+            serde_json::to_string_pretty(&rows).map_err(|e| AppError::Database(e.to_string()))?
+        }
         "markdown" => rows
             .iter()
             .map(|r| format!("## {}\n\n{}\n", r.created_at, r.text))
@@ -162,7 +165,6 @@ mod tests {
     use super::*;
     use crate::db::Db;
 
-
     fn in_memory_db() -> Db {
         Db::open_in_memory().expect("in-memory db")
     }
@@ -171,7 +173,14 @@ mod tests {
     fn insert_and_list() {
         let db = in_memory_db();
         let conn = db.lock().unwrap();
-        insert_transcript(&conn, "hello world", "cloud", "whisper-large-v3-turbo", 1000).unwrap();
+        insert_transcript(
+            &conn,
+            "hello world",
+            "cloud",
+            "whisper-large-v3-turbo",
+            1000,
+        )
+        .unwrap();
         drop(conn);
 
         let conn = db.lock().unwrap();

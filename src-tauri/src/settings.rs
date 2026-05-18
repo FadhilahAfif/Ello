@@ -130,8 +130,8 @@ impl SettingsManager {
 
             // Deserialize with missing-field defaults via a helper
             let settings: AppSettings = if version < 2 {
-                let partial: AppSettingsV1 = serde_json::from_value(raw)
-                    .map_err(|e| AppError::Settings(e.to_string()))?;
+                let partial: AppSettingsV1 =
+                    serde_json::from_value(raw).map_err(|e| AppError::Settings(e.to_string()))?;
                 migrate_v1_to_v2(partial.into())
             } else {
                 serde_json::from_value(raw).map_err(|e| AppError::Settings(e.to_string()))?
@@ -179,9 +179,15 @@ struct AppSettingsV1 {
     hotkey: String,
 }
 
-fn default_schema_version_1() -> u16 { 1 }
-fn default_cloud_model() -> String { "whisper-large-v3-turbo".to_string() }
-fn default_hotkey() -> String { crate::hotkey::DEFAULT_HOTKEY.to_string() }
+fn default_schema_version_1() -> u16 {
+    1
+}
+fn default_cloud_model() -> String {
+    "whisper-large-v3-turbo".to_string()
+}
+fn default_hotkey() -> String {
+    crate::hotkey::DEFAULT_HOTKEY.to_string()
+}
 
 impl From<AppSettingsV1> for AppSettings {
     fn from(v1: AppSettingsV1) -> Self {
