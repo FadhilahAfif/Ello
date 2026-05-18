@@ -130,7 +130,8 @@ fn run_recording_pipeline(
     should_stop: Arc<AtomicBool>,
 ) -> Result<()> {
     let record_start = Instant::now();
-    let mut source = MicSource::new_chunked(settings.mic_device_id.clone(), should_stop);
+    let mut source = MicSource::new_chunked(settings.mic_device_id.clone(), should_stop)
+        .with_app_handle(app.clone());
     let raw_pcm = source.record(MAX_RECORDING_SECS)?;
     let duration_ms = record_start.elapsed().as_millis() as i64;
 

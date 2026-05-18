@@ -16,6 +16,21 @@
         "width": 800,
         "height": 600,
         "decorations": false
+      },
+      {
+        "label": "overlay",
+        "title": "",
+        "url": "overlay.html",
+        "width": 320,
+        "height": 60,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "resizable": false,
+        "focus": false,
+        "shadow": false
       }
     ],
     "security": {

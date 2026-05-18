@@ -110,6 +110,11 @@ body {
   100% { transform: translateX(400%); }
 }
 
+@keyframes overlay-slide-in {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
