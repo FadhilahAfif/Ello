@@ -1,14 +1,19 @@
 pub mod audio;
 pub mod commands;
+pub mod db;
 pub mod errors;
+pub mod history;
 pub mod hotkey;
 pub mod models;
 pub mod output;
 pub mod settings;
+pub mod stats;
 pub mod transcribe;
 pub mod tray;
+pub mod vocabulary;
 
 use crate::commands::RecordingState;
+use crate::db::Db;
 use tauri::{Emitter, Manager};
 use tracing_subscriber::{fmt, EnvFilter};
 
@@ -40,6 +45,14 @@ pub fn run() {
             app.manage(guard);
 
             tracing::info!("Ello dictation app started");
+
+            let db_path = app
+                .path()
+                .app_data_dir()
+                .expect("failed to get app data directory")
+                .join("ello.db");
+            let db = Db::open(&db_path).expect("failed to open database");
+            app.manage(db);
 
             if let Err(e) = crate::hotkey::register_hotkeys(app.handle()) {
                 tracing::warn!("Could not register hotkeys: {}", e);
@@ -77,6 +90,17 @@ pub fn run() {
             models::download_model,
             models::cancel_download,
             models::validate_model,
+            models::check_installed_models,
+            history::history_list,
+            history::history_get,
+            history::history_delete,
+            history::history_clear,
+            history::history_export,
+            vocabulary::vocabulary_list,
+            vocabulary::vocabulary_upsert,
+            vocabulary::vocabulary_delete,
+            vocabulary::vocabulary_import_csv,
+            stats::stats_summary,
         ])
         .on_window_event(|window, event| {
             if window.label() == "main" {
