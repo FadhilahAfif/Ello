@@ -28,8 +28,10 @@ export function Models() {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
     checkInstalledModels()
       .then((installed) => {
+        if (!mounted) return;
         setStatuses((prev) => {
           const next = { ...prev };
           for (const [id, path] of Object.entries(installed)) {
@@ -41,6 +43,7 @@ export function Models() {
         });
       })
       .catch(console.error);
+    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
