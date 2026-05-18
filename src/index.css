@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+*[data-tauri-drag-region] {
+  app-region: drag;
+  -webkit-app-region: drag;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.no-drag {
+  app-region: no-drag;
+  -webkit-app-region: no-drag;
+}
+
 @font-face {
   font-family: 'Geist';
   src: url('./assets/fonts/Geist-Variable.woff2') format('woff2');
@@ -95,6 +108,11 @@ body {
 @keyframes hairline-progress {
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(400%); }
+}
+
+@keyframes overlay-slide-in {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
 }
 
 @keyframes fade-up {

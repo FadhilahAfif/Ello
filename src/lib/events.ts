@@ -36,5 +36,9 @@ export const onModelDownloadError = (cb: (payload: { id: string; message: string
   listen<{ id: string; message: string }>("model-download-error", (e) => cb(e.payload));
 
 /** Returns an unlisten function; call it on cleanup. */
+export const onMicLevel = (cb: (level: number) => void) =>
+  listen<number>("mic-level", (e) => cb(e.payload));
+
+/** Returns an unlisten function; call it on cleanup. */
 export const onModelDownloadCancelled = (cb: (id: string) => void) =>
   listen<{ id: string }>("model-download-cancelled", (e) => cb(e.payload.id));

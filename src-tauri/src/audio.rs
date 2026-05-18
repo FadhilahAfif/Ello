@@ -3,7 +3,7 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use rubato::{FftFixedIn, Resampler};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 /// Target sample rate for Whisper and Groq.
 pub const TARGET_SAMPLE_RATE: u32 = 16_000;
@@ -56,6 +56,7 @@ pub fn enumerate_devices() -> Result<Vec<DeviceInfo>> {
 pub struct MicSource {
     device_name: Option<String>,
     should_stop: Option<Arc<AtomicBool>>,
+    app_handle: Option<tauri::AppHandle>,
 }
 
 impl MicSource {
@@ -63,6 +64,7 @@ impl MicSource {
         Self {
             device_name,
             should_stop: None,
+            app_handle: None,
         }
     }
 
@@ -70,7 +72,13 @@ impl MicSource {
         Self {
             device_name,
             should_stop: Some(should_stop),
+            app_handle: None,
         }
+    }
+
+    pub fn with_app_handle(mut self, app: tauri::AppHandle) -> Self {
+        self.app_handle = Some(app);
+        self
     }
 }
 
@@ -101,6 +109,11 @@ impl AudioSource for MicSource {
         let buffer: Arc<Mutex<Vec<f32>>> = Arc::new(Mutex::new(Vec::new()));
         let buffer_clone = Arc::clone(&buffer);
 
+        // Shared state for RMS throttle — last emit timestamp.
+        let last_emit: Arc<Mutex<Instant>> = Arc::new(Mutex::new(Instant::now()));
+        let last_emit_clone = Arc::clone(&last_emit);
+        let app_handle_clone = self.app_handle.clone();
+
         let stream = device
             .build_input_stream(
                 &config.into(),
@@ -108,6 +121,24 @@ impl AudioSource for MicSource {
                     let mut buf = buffer_clone.lock().unwrap();
                     if buf.len() < max_samples {
                         buf.extend_from_slice(data);
+                    }
+
+                    // Compute RMS of this callback chunk and emit mic-level at ≤30 Hz.
+                    if let Some(ref app) = app_handle_clone {
+                        let mut last = last_emit_clone.lock().unwrap();
+                        if last.elapsed() >= Duration::from_millis(33) {
+                            *last = Instant::now();
+                            let rms = if data.is_empty() {
+                                0.0f32
+                            } else {
+                                let sum_sq: f32 = data.iter().map(|s| s * s).sum();
+                                (sum_sq / data.len() as f32).sqrt()
+                            };
+                            let level = rms.clamp(0.0, 1.0);
+                            if let Err(e) = tauri::Emitter::emit(app, "mic-level", level) {
+                                tracing::warn!("Failed to emit mic-level: {}", e);
+                            }
+                        }
                     }
                 },
                 |e| tracing::error!("Audio stream error: {}", e),

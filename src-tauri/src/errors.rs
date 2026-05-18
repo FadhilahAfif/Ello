@@ -20,6 +20,9 @@ pub enum AppError {
     #[error("Model error: {0}")]
     Model(String),
 
+    #[error("Database error: {0}")]
+    Database(String),
+
     #[error("Operation cancelled")]
     Cancelled,
 

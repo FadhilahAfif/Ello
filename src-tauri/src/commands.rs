@@ -5,6 +5,7 @@ use crate::settings::SettingsManager;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::Instant;
 use tauri::{AppHandle, Emitter, Manager, State};
 
 // ── Shared recording state ────────────────────────────────────────────────────
@@ -128,8 +129,11 @@ fn run_recording_pipeline(
     settings: crate::settings::AppSettings,
     should_stop: Arc<AtomicBool>,
 ) -> Result<()> {
-    let mut source = MicSource::new_chunked(settings.mic_device_id.clone(), should_stop);
+    let record_start = Instant::now();
+    let mut source = MicSource::new_chunked(settings.mic_device_id.clone(), should_stop)
+        .with_app_handle(app.clone());
     let raw_pcm = source.record(MAX_RECORDING_SECS)?;
+    let duration_ms = record_start.elapsed().as_millis() as i64;
 
     if let Err(e) = app.emit("recording-stopped", ()) {
         tracing::warn!("Failed to emit recording-stopped: {}", e);
@@ -138,8 +142,12 @@ fn run_recording_pipeline(
         tracing::warn!("Failed to emit transcription-started: {}", e);
     }
 
+    let mode_str;
+    let model_str;
     let text = match settings.transcription_mode {
         crate::settings::TranscriptionMode::Cloud => {
+            mode_str = "cloud".to_string();
+            model_str = settings.cloud_model.clone();
             let key = settings
                 .groq_api_key
                 .ok_or_else(|| AppError::Transcription("Groq API key not set".to_string()))?;
@@ -148,9 +156,11 @@ fn run_recording_pipeline(
             crate::transcribe::Transcriber::transcribe(&transcriber, &raw_pcm)?
         }
         crate::settings::TranscriptionMode::Local => {
+            mode_str = "local".to_string();
             let model_path = settings.local_model_path.ok_or_else(|| {
                 AppError::Transcription("Local model path not configured".to_string())
             })?;
+            model_str = model_path.clone();
             let transcriber = crate::transcribe::local::LocalWhisperTranscriber::new(
                 model_path,
                 settings.language.clone(),
@@ -158,6 +168,66 @@ fn run_recording_pipeline(
             crate::transcribe::Transcriber::transcribe(&transcriber, &raw_pcm)?
         }
     };
+
+    // Get DB state once so it lives for the rest of the function
+    let db_state = app.state::<crate::db::Db>();
+
+    // Apply vocabulary replacements
+    let text = if settings.history_enabled {
+        match db_state.lock() {
+            Ok(conn) => {
+                let rules: Vec<crate::vocabulary::VocabularyRule> = conn
+                    .prepare("SELECT id, term, replacement, case_sensitive, kind FROM vocabulary ORDER BY id ASC")
+                    .map(|mut stmt| {
+                        stmt.query_map([], |row| {
+                            Ok(crate::vocabulary::VocabularyRule {
+                                id: row.get(0)?,
+                                term: row.get(1)?,
+                                replacement: row.get(2)?,
+                                case_sensitive: row.get::<_, i64>(3)? != 0,
+                                kind: row.get(4)?,
+                            })
+                        })
+                        .map(|rows| rows.filter_map(|r| r.ok()).collect::<Vec<_>>())
+                        .unwrap_or_default()
+                    })
+                    .unwrap_or_default();
+                crate::vocabulary::apply_rules(&text, &rules)
+            }
+            Err(e) => {
+                tracing::warn!("Could not lock DB for vocabulary: {}", e);
+                text
+            }
+        }
+    } else {
+        text
+    };
+
+    // Persist transcript + stats when history is enabled
+    if settings.history_enabled {
+        match db_state.lock() {
+            Ok(conn) => {
+                let word_count = text.split_whitespace().count() as i64;
+                if let Err(e) = crate::history::insert_transcript(
+                    &conn,
+                    &text,
+                    &mode_str,
+                    &model_str,
+                    duration_ms,
+                ) {
+                    tracing::warn!("Failed to insert transcript: {}", e);
+                }
+                if settings.stats_enabled {
+                    if let Err(e) = crate::stats::bump_stats(&conn, word_count, duration_ms) {
+                        tracing::warn!("Failed to bump stats: {}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::warn!("Could not lock DB for history/stats: {}", e);
+            }
+        }
+    }
 
     if let Err(e) = app.emit("transcription-done", serde_json::json!({ "text": text })) {
         tracing::warn!("Failed to emit transcription-done: {}", e);

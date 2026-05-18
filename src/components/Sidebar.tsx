@@ -9,7 +9,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { type Route, navigate, useRoute } from "../app/router";
 import { useSettingsStore } from "../store/settings";
-import { Wordmark } from "./ui/Wordmark";
 
 interface NavItem {
   route: Route;
@@ -40,13 +39,6 @@ export function Sidebar() {
       className="flex flex-col items-stretch w-[56px] shrink-0 bg-[var(--bg-sunken)] border-r border-[var(--border-subtle)] h-screen py-[var(--space-3)]"
     >
       <div className="flex flex-col items-center gap-[2px] flex-1">
-        <button
-          onClick={() => navigate("/dashboard")}
-          aria-label="Ello — go to dashboard"
-          className="flex items-center justify-center h-9 w-9 rounded-[var(--radius-md)] mb-[var(--space-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-        >
-          <Wordmark size="sm" />
-        </button>
         {TOP_ITEMS.map((item) => (
           <NavButton key={item.route} item={item} active={route === item.route} />
         ))}
