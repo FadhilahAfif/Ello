@@ -4,6 +4,7 @@ export const ROUTES = [
   "/dashboard",
   "/history",
   "/vocabulary",
+  "/ai-polish",
   "/models",
   "/settings",
   "/about",

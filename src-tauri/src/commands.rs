@@ -150,6 +150,7 @@ fn run_recording_pipeline(
             model_str = settings.cloud_model.clone();
             let key = settings
                 .groq_api_key
+                .clone()
                 .ok_or_else(|| AppError::Transcription("Groq API key not set".to_string()))?;
             let transcriber =
                 crate::transcribe::cloud::GroqTranscriber::new(key, settings.cloud_model);
@@ -172,38 +173,59 @@ fn run_recording_pipeline(
     // Get DB state once so it lives for the rest of the function
     let db_state = app.state::<crate::db::Db>();
 
-    // Apply vocabulary replacements
-    let text = if settings.history_enabled {
-        match db_state.lock() {
-            Ok(conn) => {
-                let rules: Vec<crate::vocabulary::VocabularyRule> = conn
-                    .prepare("SELECT id, term, replacement, case_sensitive, kind FROM vocabulary ORDER BY id ASC")
-                    .map(|mut stmt| {
-                        stmt.query_map([], |row| {
-                            Ok(crate::vocabulary::VocabularyRule {
-                                id: row.get(0)?,
-                                term: row.get(1)?,
-                                replacement: row.get(2)?,
-                                case_sensitive: row.get::<_, i64>(3)? != 0,
-                                kind: row.get(4)?,
-                            })
+    // Step 1: Always apply vocabulary rules (regardless of history_enabled)
+    let text = match db_state.lock() {
+        Ok(conn) => {
+            let rules: Vec<crate::vocabulary::VocabularyRule> = conn
+                .prepare("SELECT id, term, replacement, case_sensitive, kind FROM vocabulary ORDER BY id ASC")
+                .map(|mut stmt| {
+                    stmt.query_map([], |row| {
+                        Ok(crate::vocabulary::VocabularyRule {
+                            id: row.get(0)?,
+                            term: row.get(1)?,
+                            replacement: row.get(2)?,
+                            case_sensitive: row.get::<_, i64>(3)? != 0,
+                            kind: row.get(4)?,
                         })
-                        .map(|rows| rows.filter_map(|r| r.ok()).collect::<Vec<_>>())
-                        .unwrap_or_default()
                     })
-                    .unwrap_or_default();
-                crate::vocabulary::apply_rules(&text, &rules)
-            }
-            Err(e) => {
-                tracing::warn!("Could not lock DB for vocabulary: {}", e);
-                text
-            }
+                    .map(|rows| rows.filter_map(|r| r.ok()).collect::<Vec<_>>())
+                    .unwrap_or_default()
+                })
+                .unwrap_or_default();
+            crate::vocabulary::apply_rules(&text, &rules)
         }
-    } else {
-        text
+        Err(e) => {
+            tracing::warn!("Could not lock DB for vocabulary: {}", e);
+            text
+        }
     };
 
-    // Persist transcript + stats when history is enabled
+    // Step 2: Optionally apply AI polish (soft-fail — never blocks output)
+    let text = {
+        let should_polish = settings.ai_polish.enabled
+            && settings.groq_api_key.is_some()
+            && text.split_whitespace().count() >= settings.ai_polish.min_word_count as usize;
+        if should_polish {
+            let api_key = settings.groq_api_key.as_deref().unwrap_or("");
+            match crate::polish::run(&text, &settings.ai_polish, api_key) {
+                Ok(polished) => polished,
+                Err(e) => {
+                    tracing::warn!("AI polish failed, using raw transcript: {}", e);
+                    if let Err(emit_err) = app.emit(
+                        "polish-failed",
+                        serde_json::json!({ "reason": e.to_string() }),
+                    ) {
+                        tracing::warn!("Failed to emit polish-failed: {}", emit_err);
+                    }
+                    text
+                }
+            }
+        } else {
+            text
+        }
+    };
+
+    // Step 3: Persist transcript + stats when history is enabled
     if settings.history_enabled {
         match db_state.lock() {
             Ok(conn) => {

@@ -4,6 +4,13 @@ export type TranscriptionMode = "cloud" | "local";
 export type HotkeyMode = "toggle" | "pushToTalk";
 export type RecordingStatus = "idle" | "recording" | "transcribing";
 
+export interface AiPolishSettings {
+  enabled: boolean;
+  model: string;
+  prompt: string;
+  minWordCount: number;
+}
+
 export interface ModelInfo {
   id: string;
   name: string;
@@ -19,6 +26,13 @@ export type ModelStatus =
   | { kind: "installed"; path: string }
   | { kind: "error"; message: string };
 
+export interface AiPolishSettings {
+  enabled: boolean;
+  model: string;
+  prompt: string;
+  minWordCount: number;
+}
+
 export interface AppSettings {
   schemaVersion: number;
   // Security: in-memory only — never log, serialize to UI, or pass as prop
@@ -30,6 +44,14 @@ export interface AppSettings {
   micDeviceId: string | null;
   localModelPath: string | null;
   hotkey: string;
+  theme: string;
+  accentColor: string;
+  aiPolish: AiPolishSettings;
+  historyEnabled: boolean;
+  statsEnabled: boolean;
+  onboardingComplete: boolean;
+  lastSeenVersion: string | null;
+  updateChannel: string;
 }
 
 export interface AudioDevice {
@@ -39,7 +61,7 @@ export interface AudioDevice {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   groqApiKey: null,
   cloudModel: "whisper-large-v3-turbo",
   transcriptionMode: "cloud",
@@ -48,6 +70,19 @@ export const DEFAULT_SETTINGS: AppSettings = {
   micDeviceId: null,
   localModelPath: null,
   hotkey: "Alt+Shift+D",
+  theme: "dark",
+  accentColor: "#7c5cff",
+  aiPolish: {
+    enabled: false,
+    model: "llama-3.3-70b-versatile",
+    prompt: "Remove filler words and fix grammar without changing meaning.",
+    minWordCount: 10,
+  },
+  historyEnabled: true,
+  statsEnabled: true,
+  onboardingComplete: false,
+  lastSeenVersion: null,
+  updateChannel: "stable",
 };
 
 interface SettingsStore {

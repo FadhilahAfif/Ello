@@ -82,6 +82,9 @@ pub fn vocabulary_delete(db: State<Db>, id: i64) -> Result<()> {
 #[tauri::command]
 pub fn vocabulary_import_csv(db: State<Db>, csv: String) -> Result<u32> {
     let conn = db.lock()?;
+    let tx = conn
+        .unchecked_transaction()
+        .map_err(|e| AppError::Database(e.to_string()))?;
     let mut count = 0u32;
     for line in csv.lines().skip(1) {
         let parts: Vec<&str> = line.splitn(4, ',').collect();
@@ -102,13 +105,14 @@ pub fn vocabulary_import_csv(db: State<Db>, csv: String) -> Result<u32> {
         if term.is_empty() {
             continue;
         }
-        conn.execute(
+        tx.execute(
             "INSERT INTO vocabulary (term, replacement, case_sensitive, kind) VALUES (?1,?2,?3,?4)",
             rusqlite::params![term, replacement, case_sensitive, kind],
         )
         .map_err(|e| AppError::Database(e.to_string()))?;
         count += 1;
     }
+    tx.commit().map_err(|e| AppError::Database(e.to_string()))?;
     Ok(count)
 }
 
@@ -280,6 +284,48 @@ mod tests {
         }];
         let result = apply_rules("I'm gonna do it", &rules);
         assert_eq!(result, "I'm going to do it");
+    }
+
+    #[test]
+    fn import_csv_atomic() {
+        let db = in_memory_db();
+        let conn = db.lock().unwrap();
+        let csv =
+            "term,replacement,case_sensitive,kind\ngonna,going to,0,exact\nwanna,want to,0,exact\n";
+        let tx = conn.unchecked_transaction().unwrap();
+        let mut count = 0u32;
+        for line in csv.lines().skip(1) {
+            let parts: Vec<&str> = line.splitn(4, ',').collect();
+            if parts.len() < 2 {
+                continue;
+            }
+            let term = parts[0].trim().trim_matches('"');
+            let replacement = parts[1].trim().trim_matches('"');
+            let case_sensitive: i64 = parts
+                .get(2)
+                .map(|s| s.trim().trim_matches('"'))
+                .and_then(|s| s.parse::<i64>().ok())
+                .unwrap_or(0);
+            let kind = parts
+                .get(3)
+                .map(|s| s.trim().trim_matches('"'))
+                .unwrap_or("exact");
+            if term.is_empty() {
+                continue;
+            }
+            tx.execute(
+                "INSERT INTO vocabulary (term, replacement, case_sensitive, kind) VALUES (?1,?2,?3,?4)",
+                rusqlite::params![term, replacement, case_sensitive, kind],
+            )
+            .unwrap();
+            count += 1;
+        }
+        tx.commit().unwrap();
+        assert_eq!(count, 2);
+        let n: i64 = conn
+            .query_row("SELECT COUNT(*) FROM vocabulary", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(n, 2);
     }
 
     #[test]

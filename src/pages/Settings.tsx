@@ -7,7 +7,7 @@ import { Select } from "../components/ui/Select";
 import { Switch } from "../components/ui/Switch";
 import { HotkeyCapture } from "../components/HotkeyCapture";
 import { Section } from "../components/Section";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, ArrowUpRight } from "lucide-react";
 
 const CLOUD_MODELS = [
   "whisper-large-v3-turbo",
@@ -292,14 +292,17 @@ export function Settings() {
           <div ref={(el) => { sectionRefs.current.polish = el; }} id="polish" className="scroll-mt-[var(--space-8)]">
             <Section eyebrow="Polish" title="AI cleanup">
               <Row
-                label="Enable AI polish"
-                desc="Run transcripts through an LLM to clean up filler and grammar."
+                label="AI Polish"
+                desc="Remove filler words, fix grammar, or reformat transcripts with an LLM."
               >
-                <Switch checked={false} onChange={() => {}} label="Enable AI polish" disabled />
+                <button
+                  onClick={() => (window.location.hash = "/ai-polish")}
+                  className="group inline-flex items-center gap-[6px] text-[12px] text-[var(--accent)] hover:text-[var(--text-primary)] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] rounded"
+                >
+                  Configure
+                  <ArrowUpRight size={12} strokeWidth={1.6} className="transition-transform duration-150 group-hover:translate-x-[1px] group-hover:-translate-y-[1px]" />
+                </button>
               </Row>
-              <p className="text-[11px] text-[var(--text-tertiary)] font-[var(--font-mono)] mt-[var(--space-3)]">
-                Coming in a future update.
-              </p>
             </Section>
           </div>
         </div>

@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   History as HistoryIcon,
   BookOpen,
+  Sparkles,
   Download,
   Settings as SettingsIcon,
   Info,
@@ -20,6 +21,7 @@ const TOP_ITEMS: NavItem[] = [
   { route: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
   { route: "/history", label: "History", Icon: HistoryIcon },
   { route: "/vocabulary", label: "Vocabulary", Icon: BookOpen },
+  { route: "/ai-polish", label: "AI Polish", Icon: Sparkles },
   { route: "/models", label: "Models", Icon: Download },
   { route: "/settings", label: "Settings", Icon: SettingsIcon },
 ];
@@ -44,7 +46,7 @@ export function Sidebar() {
         ))}
       </div>
 
-      <div className="flex flex-col items-center gap-[var(--space-3)] pb-[var(--space-2)]">
+      <div className="flex flex-col items-center gap-[var(--space-3)] pb-[var(--space-8)]">
         <div
           className="flex flex-col items-center gap-[6px]"
           aria-label={`Status: ${status}, mode: ${mode}`}
@@ -87,15 +89,7 @@ function NavButton({ item, active }: { item: NavItem; active: boolean }) {
           : "text-[var(--text-tertiary)] hover:bg-[var(--bg-raised)] hover:text-[var(--text-secondary)]"
       }`}
     >
-      {/* Cursor-rail: 2px amber block flush to the inner right edge of the sidebar.
-          Same brand metaphor as the wordmark cursor; not a decorative side-stripe. */}
-      {active && (
-        <span
-          aria-hidden="true"
-          className="absolute -right-[12px] top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-[var(--radius-sm)]"
-          style={{ background: "var(--accent)" }}
-        />
-      )}
+
       <Icon size={16} strokeWidth={1.6} aria-hidden="true" />
     </button>
   );

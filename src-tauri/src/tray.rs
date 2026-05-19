@@ -1,10 +1,14 @@
 use tauri::{
+    image::Image,
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Manager, Runtime,
 };
 
-pub fn setup_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
+pub fn setup_tray<R: Runtime>(
+    app: &AppHandle<R>,
+    app_icon: Option<Image<'static>>,
+) -> tauri::Result<()> {
     let show = MenuItem::with_id(app, "ello:show", "Show", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "ello:quit", "Quit", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&show, &quit])?;
@@ -39,7 +43,7 @@ pub fn setup_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
             }
         });
 
-    if let Some(icon) = app.default_window_icon().cloned() {
+    if let Some(icon) = app_icon.or_else(|| app.default_window_icon().cloned()) {
         builder = builder.icon(icon);
     }
 

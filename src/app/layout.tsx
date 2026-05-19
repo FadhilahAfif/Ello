@@ -12,6 +12,7 @@ import {
 import { Dashboard } from "../pages/Dashboard";
 import { History } from "../pages/History";
 import { Vocabulary } from "../pages/Vocabulary";
+import { AiPolish } from "../pages/AiPolish";
 import { Models } from "../pages/Models";
 import { Settings } from "../pages/Settings";
 import { About } from "../pages/About";
@@ -23,20 +24,18 @@ const PAGES: Record<Route, ComponentType> = {
   "/dashboard": Dashboard,
   "/history": History,
   "/vocabulary": Vocabulary,
+  "/ai-polish": AiPolish,
   "/models": Models,
   "/settings": Settings,
   "/about": About,
   "/onboarding": Onboarding,
 };
 
-/**
- * Per-route content width. Wider for workspaces (Settings two-column),
- * narrower for content-led pages. Removes the "576px-flush-left" problem.
- */
 const CONTAINER_WIDTH: Record<Route, string> = {
   "/dashboard": "max-w-[880px]",
   "/history": "max-w-[880px]",
   "/vocabulary": "max-w-[880px]",
+  "/ai-polish": "max-w-[680px]",
   "/models": "max-w-[720px]",
   "/settings": "max-w-[1080px]",
   "/about": "max-w-[640px]",
