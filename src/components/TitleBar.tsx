@@ -3,8 +3,6 @@ import { Minus, Square, X } from "lucide-react";
 import { Wordmark } from "./ui/Wordmark";
 
 export function TitleBar() {
-  const win = getCurrentWindow();
-
   return (
     <div
       data-tauri-drag-region
@@ -16,7 +14,7 @@ export function TitleBar() {
 
       <div className="no-drag flex items-center">
         <button
-          onClick={() => win.minimize()}
+          onClick={() => getCurrentWindow().minimize()}
           aria-label="Minimize"
           title="Minimize"
           className="flex items-center justify-center w-11 h-9 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-raised)] transition-colors duration-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[var(--accent)]"
@@ -24,7 +22,7 @@ export function TitleBar() {
           <Minus size={12} strokeWidth={1.6} />
         </button>
         <button
-          onClick={() => win.toggleMaximize()}
+          onClick={() => getCurrentWindow().toggleMaximize()}
           aria-label="Maximize"
           title="Maximize"
           className="flex items-center justify-center w-11 h-9 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-raised)] transition-colors duration-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[var(--accent)]"
@@ -32,7 +30,7 @@ export function TitleBar() {
           <Square size={11} strokeWidth={1.6} />
         </button>
         <button
-          onClick={() => win.close()}
+          onClick={() => getCurrentWindow().close()}
           aria-label="Close"
           title="Close"
           className="flex items-center justify-center w-11 h-9 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[#7f1d1d] transition-colors duration-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[var(--accent)]"

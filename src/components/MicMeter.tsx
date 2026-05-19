@@ -1,27 +1,41 @@
 import { useEffect, useRef } from "react";
+import { onMicLevel } from "../lib/events";
 
 interface MicMeterProps {
-  /** Whether the meter is active. When false, meter quiets to baseline. */
   active: boolean;
-  /** Visual height in px. */
   height?: number;
-  /** Number of bars rendered. Bars give a more "voice waveform" feel than a single bar. */
   bars?: number;
   className?: string;
 }
 
-/**
- * Synthetic-envelope mic meter.
- *
- * Phase 5: drives bars from a layered sine envelope when `active` is true.
- * Phase 7: this same component will swap the data source to backend `mic-level`
- * events without changing the API.
- */
+function toVisualLevel(level: number) {
+  const noiseFloor = 0.01;
+  const gain = 18;
+  return Math.max(0, Math.min(1, (level - noiseFloor) * gain));
+}
+
 export function MicMeter({ active, height = 36, bars = 24, className = "" }: MicMeterProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
-  const startRef = useRef<number>(0);
   const barRefs = useRef<HTMLDivElement[]>([]);
+  const levelRef = useRef<number>(0);
+  const smoothedRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (!active) {
+      levelRef.current = 0;
+      return;
+    }
+    let unlisten: (() => void) | undefined;
+    onMicLevel((level) => {
+      levelRef.current = level;
+    }).then((fn) => {
+      unlisten = fn;
+    });
+    return () => {
+      unlisten?.();
+      levelRef.current = 0;
+    };
+  }, [active]);
 
   useEffect(() => {
     if (!active) {
@@ -36,25 +50,18 @@ export function MicMeter({ active, height = 36, bars = 24, className = "" }: Mic
       return;
     }
 
-    startRef.current = performance.now();
-
-    const tick = (now: number) => {
-      const t = (now - startRef.current) / 1000;
+    const tick = () => {
+      const target = toVisualLevel(levelRef.current);
+      smoothedRef.current += (target - smoothedRef.current) * 0.25;
+      const base = smoothedRef.current;
       const els = barRefs.current;
       for (let i = 0; i < els.length; i++) {
         const el = els[i];
         if (!el) continue;
-        // Layered sines + per-bar phase create an irregular envelope that
-        // reads like speech, not a metronome.
         const phase = i * 0.42;
-        const slow = 0.5 + 0.5 * Math.sin(t * 1.6 + phase);
-        const fast = 0.5 + 0.5 * Math.sin(t * 5.7 + phase * 1.7);
-        const flicker = 0.5 + 0.5 * Math.sin(t * 13.0 + phase * 0.31);
-        const env = slow * 0.55 + fast * 0.3 + flicker * 0.15;
-
-        // Center bias so middle bars are taller (mouth-shape feel).
         const center = 1 - Math.abs(i / (els.length - 1) - 0.5) * 1.4;
-        const scaled = Math.max(0.06, Math.min(1, env * Math.max(0.2, center)));
+        const jitter = 0.85 + 0.15 * Math.sin(Date.now() / 80 + phase);
+        const scaled = Math.max(0.06, Math.min(1, base * Math.max(0.2, center) * jitter));
         el.style.transform = `scaleY(${scaled.toFixed(3)})`;
       }
       rafRef.current = requestAnimationFrame(tick);
@@ -71,7 +78,6 @@ export function MicMeter({ active, height = 36, bars = 24, className = "" }: Mic
 
   return (
     <div
-      ref={containerRef}
       role="presentation"
       aria-hidden="true"
       className={`flex items-center justify-center gap-[3px] ${className}`}
