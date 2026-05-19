@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSettingsStore } from "../store/settings";
 import type { ModelStatus } from "../store/settings";
-import { getModelManifest, downloadModel, cancelDownload } from "../lib/invoke";
+import { getModelManifest, downloadModel, cancelDownload, checkInstalledModels } from "../lib/invoke";
 import type { ModelManifestEntry } from "../lib/invoke";
 import {
   onModelDownloadProgress, onModelDownloadDone,
@@ -25,6 +25,25 @@ export function Models() {
 
   useEffect(() => {
     getModelManifest().then(setManifest).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    checkInstalledModels()
+      .then((installed) => {
+        if (!mounted) return;
+        setStatuses((prev) => {
+          const next = { ...prev };
+          for (const [id, path] of Object.entries(installed)) {
+            if (!next[id] || next[id].kind === "idle") {
+              next[id] = { kind: "installed", path };
+            }
+          }
+          return next;
+        });
+      })
+      .catch(console.error);
+    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {

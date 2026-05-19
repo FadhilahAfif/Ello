@@ -25,6 +25,8 @@ export const startRecording = () => invoke<void>("start_recording");
 export const stopRecording = () => invoke<void>("stop_recording");
 export const validateModel = (id: string, path: string) =>
   invoke<ModelValidationResult>("validate_model", { id, path });
+export const checkInstalledModels = () =>
+  invoke<Record<string, string>>("check_installed_models");
 
 export interface VocabularyRule {
   id: number | null;

@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 // ── Manifest ─────────────────────────────────────────────────────────────────
 
@@ -233,6 +233,29 @@ pub fn validate_model(id: String, path: String) -> ModelValidationResult {
     }
 }
 
+pub fn check_installed_in_dir(dir: &Path) -> HashMap<String, String> {
+    let mut result = HashMap::new();
+    for model in MODELS {
+        let path = dir.join(model.filename);
+        if path.is_file() {
+            if let Some(s) = path.to_str() {
+                result.insert(model.id.to_string(), s.to_string());
+            }
+        }
+    }
+    result
+}
+
+#[tauri::command]
+pub fn check_installed_models(app: AppHandle) -> HashMap<String, String> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map(|p| p.join("models"))
+        .unwrap_or_default();
+    check_installed_in_dir(&dir)
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 #[allow(clippy::too_many_arguments)]
@@ -401,5 +424,24 @@ mod tests {
             "abc123",
         );
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn check_installed_returns_empty_for_missing_dir() {
+        let dir = std::path::Path::new("/nonexistent/models/dir");
+        let result = check_installed_in_dir(dir);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn check_installed_finds_file_by_filename() {
+        let dir = tempfile::tempdir().unwrap();
+        let model = find_model("tiny").unwrap();
+        std::fs::write(dir.path().join(model.filename), b"fake").unwrap();
+        let result = check_installed_in_dir(dir.path());
+        assert_eq!(
+            result.get("tiny").map(|s| s.as_str()),
+            Some(dir.path().join(model.filename).to_str().unwrap())
+        );
     }
 }
