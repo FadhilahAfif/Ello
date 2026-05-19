@@ -20,7 +20,6 @@ const NAV_SECTIONS = [
   { id: "audio", label: "Audio" },
   { id: "hotkey", label: "Hotkey" },
   { id: "behavior", label: "Behavior" },
-  { id: "polish", label: "AI Polish" },
 ] as const;
 
 type NavId = typeof NAV_SECTIONS[number]["id"];
@@ -34,7 +33,6 @@ export function Settings() {
     audio: null,
     hotkey: null,
     behavior: null,
-    polish: null,
   });
 
   // Scroll-spy: highlight the in-page nav based on which section is most visible.
@@ -289,19 +287,18 @@ export function Settings() {
           </div>
 
           {/* AI POLISH */}
-          <div ref={(el) => { sectionRefs.current.polish = el; }} id="polish" className="scroll-mt-[var(--space-8)]">
-            <Section eyebrow="Polish" title="AI cleanup">
-              <Row
-                label="Enable AI polish"
-                desc="Run transcripts through an LLM to clean up filler and grammar."
+          <Section eyebrow="Polish" title="AI cleanup">
+            <p className="text-[12px] text-[var(--text-secondary)]">
+              Configure AI polish on the{" "}
+              <button
+                onClick={() => (window.location.hash = "/ai-polish")}
+                className="text-[var(--accent)] hover:underline focus-visible:outline-none focus-visible:underline"
               >
-                <Switch checked={false} onChange={() => {}} label="Enable AI polish" disabled />
-              </Row>
-              <p className="text-[11px] text-[var(--text-tertiary)] font-[var(--font-mono)] mt-[var(--space-3)]">
-                Coming in a future update.
-              </p>
-            </Section>
-          </div>
+                AI Polish
+              </button>{" "}
+              page.
+            </p>
+          </Section>
         </div>
       </div>
 

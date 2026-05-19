@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   History as HistoryIcon,
   BookOpen,
+  Sparkles,
   Download,
   Settings as SettingsIcon,
   Info,
@@ -9,7 +10,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { type Route, navigate, useRoute } from "../app/router";
 import { useSettingsStore } from "../store/settings";
-import { Wordmark } from "./ui/Wordmark";
 
 interface NavItem {
   route: Route;
@@ -21,6 +21,7 @@ const TOP_ITEMS: NavItem[] = [
   { route: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
   { route: "/history", label: "History", Icon: HistoryIcon },
   { route: "/vocabulary", label: "Vocabulary", Icon: BookOpen },
+  { route: "/ai-polish", label: "AI Polish", Icon: Sparkles },
   { route: "/models", label: "Models", Icon: Download },
   { route: "/settings", label: "Settings", Icon: SettingsIcon },
 ];
@@ -40,13 +41,6 @@ export function Sidebar() {
       className="flex flex-col items-stretch w-[56px] shrink-0 bg-[var(--bg-sunken)] border-r border-[var(--border-subtle)] h-screen py-[var(--space-3)]"
     >
       <div className="flex flex-col items-center gap-[2px] flex-1">
-        <button
-          onClick={() => navigate("/dashboard")}
-          aria-label="Ello — go to dashboard"
-          className="flex items-center justify-center h-9 w-9 rounded-[var(--radius-md)] mb-[var(--space-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-        >
-          <Wordmark size="sm" />
-        </button>
         {TOP_ITEMS.map((item) => (
           <NavButton key={item.route} item={item} active={route === item.route} />
         ))}
@@ -95,15 +89,6 @@ function NavButton({ item, active }: { item: NavItem; active: boolean }) {
           : "text-[var(--text-tertiary)] hover:bg-[var(--bg-raised)] hover:text-[var(--text-secondary)]"
       }`}
     >
-      {/* Cursor-rail: 2px amber block flush to the inner right edge of the sidebar.
-          Same brand metaphor as the wordmark cursor; not a decorative side-stripe. */}
-      {active && (
-        <span
-          aria-hidden="true"
-          className="absolute -right-[12px] top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-[var(--radius-sm)]"
-          style={{ background: "var(--accent)" }}
-        />
-      )}
       <Icon size={16} strokeWidth={1.6} aria-hidden="true" />
     </button>
   );

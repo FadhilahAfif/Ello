@@ -2,12 +2,21 @@ use crate::audio::{enumerate_devices, AudioSource, MicSource, MAX_RECORDING_SECS
 use crate::errors::{AppError, Result};
 use crate::output::{FallbackSink, OutputSink};
 use crate::settings::SettingsManager;
+use crate::vocabulary::VocabularyRule;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
 
 // ── Shared recording state ────────────────────────────────────────────────────
+
+pub struct LastTranscript(pub std::sync::Mutex<Option<String>>);
+
+impl Default for LastTranscript {
+    fn default() -> Self {
+        Self(std::sync::Mutex::new(None))
+    }
+}
 
 /// Held in Tauri managed state. Coordinates the recording thread lifecycle.
 pub struct RecordingState {
@@ -138,6 +147,8 @@ fn run_recording_pipeline(
         tracing::warn!("Failed to emit transcription-started: {}", e);
     }
 
+    let groq_api_key = settings.groq_api_key.clone();
+
     let text = match settings.transcription_mode {
         crate::settings::TranscriptionMode::Cloud => {
             let key = settings
@@ -159,9 +170,58 @@ fn run_recording_pipeline(
         }
     };
 
-    if let Err(e) = app.emit("transcription-done", serde_json::json!({ "text": text })) {
+    let raw_text = text;
+
+    if let Err(e) = app.emit(
+        "transcription-done",
+        serde_json::json!({ "text": raw_text }),
+    ) {
         tracing::warn!("Failed to emit transcription-done: {}", e);
     }
+
+    match app.state::<LastTranscript>().0.lock() {
+        Ok(mut guard) => *guard = Some(raw_text.clone()),
+        Err(e) => tracing::warn!(
+            "LastTranscript mutex poisoned, transcript not stored: {}",
+            e
+        ),
+    }
+
+    let text = {
+        let db = app.state::<crate::db::Db>();
+        match crate::vocabulary::list(&db) {
+            Ok(rules) if !rules.is_empty() => crate::vocabulary::apply(&raw_text, &rules),
+            Ok(_) => raw_text,
+            Err(e) => {
+                tracing::warn!("Failed to load vocabulary rules, skipping: {}", e);
+                raw_text
+            }
+        }
+    };
+
+    let text = if settings.ai_polish.enabled {
+        match &groq_api_key {
+            Some(key) => match crate::polish::run(&text, &settings.ai_polish, key) {
+                Ok(polished) => polished,
+                Err(e) => {
+                    tracing::warn!("AI polish failed, using raw transcript: {}", e);
+                    if let Err(emit_err) = app.emit(
+                        "polish-failed",
+                        serde_json::json!({ "message": e.to_string() }),
+                    ) {
+                        tracing::warn!("Failed to emit polish-failed: {}", emit_err);
+                    }
+                    text
+                }
+            },
+            None => {
+                tracing::warn!("AI polish enabled but no Groq API key, skipping");
+                text
+            }
+        }
+    } else {
+        text
+    };
 
     FallbackSink.output(&text)?;
 
@@ -181,4 +241,73 @@ pub fn stop_recording(state: State<RecordingState>) -> Result<()> {
     }
     state.should_stop.store(true, Ordering::SeqCst);
     Ok(())
+}
+
+#[tauri::command]
+pub fn vocabulary_list(app: AppHandle) -> Result<Vec<VocabularyRule>> {
+    let db = app.state::<crate::db::Db>();
+    crate::vocabulary::list(&db)
+}
+
+#[tauri::command]
+pub fn vocabulary_upsert(app: AppHandle, rule: VocabularyRule) -> Result<VocabularyRule> {
+    let db = app.state::<crate::db::Db>();
+    crate::vocabulary::upsert(&db, rule)
+}
+
+#[tauri::command]
+pub fn vocabulary_delete(app: AppHandle, id: i64) -> Result<()> {
+    let db = app.state::<crate::db::Db>();
+    crate::vocabulary::delete(&db, id)
+}
+
+#[tauri::command]
+pub fn vocabulary_import_csv(app: AppHandle, csv_text: String) -> Result<usize> {
+    let db = app.state::<crate::db::Db>();
+    crate::vocabulary::import_csv(&db, &csv_text)
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PolishTestResult {
+    pub before: String,
+    pub after: String,
+    pub error: Option<String>,
+}
+
+#[tauri::command]
+pub fn polish_test(app: AppHandle) -> Result<PolishTestResult> {
+    let settings = SettingsManager::new(app.clone()).get_settings()?;
+    let last_transcript = app.state::<LastTranscript>();
+    let text = last_transcript
+        .0
+        .lock()
+        .map_err(|e| AppError::Polish(e.to_string()))?
+        .clone()
+        .unwrap_or_default();
+
+    if text.is_empty() {
+        return Ok(PolishTestResult {
+            before: String::new(),
+            after: String::new(),
+            error: Some("No transcript available to test.".to_string()),
+        });
+    }
+
+    let key = settings
+        .groq_api_key
+        .ok_or_else(|| AppError::Polish("Groq API key not set".to_string()))?;
+
+    match crate::polish::run(&text, &settings.ai_polish, &key) {
+        Ok(polished) => Ok(PolishTestResult {
+            before: text,
+            after: polished,
+            error: None,
+        }),
+        Err(e) => Ok(PolishTestResult {
+            before: text.clone(),
+            after: text,
+            error: Some(e.to_string()),
+        }),
+    }
 }

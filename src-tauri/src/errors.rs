@@ -23,6 +23,12 @@ pub enum AppError {
     #[error("Operation cancelled")]
     Cancelled,
 
+    #[error("Database error: {0}")]
+    Database(String),
+
+    #[error("AI polish error: {0}")]
+    Polish(String),
+
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 

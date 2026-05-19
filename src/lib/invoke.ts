@@ -25,3 +25,26 @@ export const startRecording = () => invoke<void>("start_recording");
 export const stopRecording = () => invoke<void>("stop_recording");
 export const validateModel = (id: string, path: string) =>
   invoke<ModelValidationResult>("validate_model", { id, path });
+
+export interface VocabularyRule {
+  id: number | null;
+  term: string;
+  replacement: string;
+  caseSensitive: boolean;
+  kind: "exactWord" | "prefix" | "contains";
+}
+
+export interface PolishTestResult {
+  before: string;
+  after: string;
+  error: string | null;
+}
+
+export const vocabularyList = () => invoke<VocabularyRule[]>("vocabulary_list");
+export const vocabularyUpsert = (rule: VocabularyRule) =>
+  invoke<VocabularyRule>("vocabulary_upsert", { rule });
+export const vocabularyDelete = (id: number) =>
+  invoke<void>("vocabulary_delete", { id });
+export const vocabularyImportCsv = (csvText: string) =>
+  invoke<number>("vocabulary_import_csv", { csvText });
+export const polishTest = () => invoke<PolishTestResult>("polish_test");

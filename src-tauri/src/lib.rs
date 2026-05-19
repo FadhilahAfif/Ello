@@ -1,12 +1,15 @@
 pub mod audio;
 pub mod commands;
+pub mod db;
 pub mod errors;
 pub mod hotkey;
 pub mod models;
 pub mod output;
+pub mod polish;
 pub mod settings;
 pub mod transcribe;
 pub mod tray;
+pub mod vocabulary;
 
 use crate::commands::RecordingState;
 use tauri::{Emitter, Manager};
@@ -17,6 +20,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(RecordingState::default())
         .manage(models::DownloadState::default())
+        .manage(commands::LastTranscript::default())
         .setup(|app| {
             let log_dir = app
                 .path()
@@ -24,6 +28,14 @@ pub fn run() {
                 .expect("failed to get app log directory");
 
             std::fs::create_dir_all(&log_dir).expect("failed to create log directory");
+
+            let data_dir = app
+                .path()
+                .app_data_dir()
+                .expect("failed to get app data dir");
+            let db =
+                crate::db::Db::open(&data_dir.join("ello.db")).expect("failed to open database");
+            app.manage(db);
 
             let file_appender = tracing_appender::rolling::daily(log_dir, "ello.log");
             let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
@@ -67,6 +79,7 @@ pub fn run() {
         )
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![
             commands::get_settings,
             commands::save_settings,
@@ -77,6 +90,11 @@ pub fn run() {
             models::download_model,
             models::cancel_download,
             models::validate_model,
+            commands::vocabulary_list,
+            commands::vocabulary_upsert,
+            commands::vocabulary_delete,
+            commands::vocabulary_import_csv,
+            commands::polish_test,
         ])
         .on_window_event(|window, event| {
             if window.label() == "main" {

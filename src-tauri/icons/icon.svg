@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img">
+  <title>Ello</title>
+  <rect width="32" height="32" rx="6" fill="#141414"/>
+  <text
+    x="1"
+    y="24"
+    font-family="'Geist Mono', 'Courier New', monospace"
+    font-size="24"
+    font-weight="500"
+    fill="#f0efeb"
+    letter-spacing="-0.5"
+  >e</text>
+  <rect x="17" y="4" width="11" height="22" rx="2" fill="#e8a020"/>
+</svg>

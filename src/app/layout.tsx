@@ -1,5 +1,6 @@
 import { useEffect, type ComponentType } from "react";
 import { Sidebar } from "../components/Sidebar";
+import { TitleBar } from "../components/TitleBar";
 import { ToastContainer } from "../components/ui/Toast";
 import { useRoute } from "./router";
 import { useSettingsStore } from "../store/settings";
@@ -11,6 +12,7 @@ import {
 import { Dashboard } from "../pages/Dashboard";
 import { History } from "../pages/History";
 import { Vocabulary } from "../pages/Vocabulary";
+import { AiPolish } from "../pages/AiPolish";
 import { Models } from "../pages/Models";
 import { Settings } from "../pages/Settings";
 import { About } from "../pages/About";
@@ -22,6 +24,7 @@ const PAGES: Record<Route, ComponentType> = {
   "/dashboard": Dashboard,
   "/history": History,
   "/vocabulary": Vocabulary,
+  "/ai-polish": AiPolish,
   "/models": Models,
   "/settings": Settings,
   "/about": About,
@@ -36,6 +39,7 @@ const CONTAINER_WIDTH: Record<Route, string> = {
   "/dashboard": "max-w-[880px]",
   "/history": "max-w-[880px]",
   "/vocabulary": "max-w-[880px]",
+  "/ai-polish": "max-w-[720px]",
   "/models": "max-w-[720px]",
   "/settings": "max-w-[1080px]",
   "/about": "max-w-[640px]",
@@ -78,17 +82,20 @@ export function AppLayout() {
   const widthClass = CONTAINER_WIDTH[route] ?? "max-w-[880px]";
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--bg-base)]">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        <div
-          className={`mx-auto px-[var(--space-6)] sm:px-[var(--space-10)] py-[var(--space-10)] ${widthClass}`}
-          key={route}
-          style={{ animation: "fade-up 240ms var(--ease-out-quart)" }}
-        >
-          <Page />
-        </div>
-      </main>
+    <div className="flex flex-col h-screen overflow-hidden bg-[var(--bg-base)]">
+      <TitleBar />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto">
+          <div
+            className={`mx-auto px-[var(--space-6)] sm:px-[var(--space-10)] py-[var(--space-10)] ${widthClass}`}
+            key={route}
+            style={{ animation: "fade-up 240ms var(--ease-out-quart)" }}
+          >
+            <Page />
+          </div>
+        </main>
+      </div>
       <ToastContainer />
     </div>
   );
