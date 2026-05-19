@@ -6,6 +6,7 @@ pub mod history;
 pub mod hotkey;
 pub mod models;
 pub mod output;
+pub mod polish;
 pub mod settings;
 pub mod stats;
 pub mod transcribe;
@@ -46,6 +47,18 @@ pub fn run() {
 
             tracing::info!("Ello dictation app started");
 
+            let app_icon = tauri::image::Image::from_bytes(include_bytes!("../icons/icon.png"))
+                .map_err(|e| {
+                    tracing::error!("Failed to load bundled app icon: {}", e);
+                    e
+                })?;
+
+            if let Some(window) = app.get_webview_window("main") {
+                if let Err(e) = window.set_icon(app_icon.clone()) {
+                    tracing::warn!("Failed to set main window icon: {}", e);
+                }
+            }
+
             let db_path = app
                 .path()
                 .app_data_dir()
@@ -64,7 +77,7 @@ pub fn run() {
                 }
             }
 
-            crate::tray::setup_tray(app.handle()).map_err(|e| {
+            crate::tray::setup_tray(app.handle(), Some(app_icon.clone())).map_err(|e| {
                 tracing::error!("Tray setup failed: {}", e);
                 e
             })?;
@@ -93,6 +106,7 @@ pub fn run() {
         )
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![
             commands::get_settings,
             commands::save_settings,
@@ -114,6 +128,7 @@ pub fn run() {
             vocabulary::vocabulary_delete,
             vocabulary::vocabulary_import_csv,
             stats::stats_summary,
+            polish::polish_test,
         ])
         .on_window_event(|window, event| {
             if window.label() == "main" {
