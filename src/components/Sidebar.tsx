@@ -46,7 +46,7 @@ export function Sidebar() {
         ))}
       </div>
 
-      <div className="flex flex-col items-center gap-[var(--space-3)] pb-[var(--space-2)]">
+      <div className="flex flex-col items-center gap-[var(--space-3)] pb-[var(--space-8)]">
         <div
           className="flex flex-col items-center gap-[6px]"
           aria-label={`Status: ${status}, mode: ${mode}`}
