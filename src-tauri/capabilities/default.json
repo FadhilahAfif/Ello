@@ -14,10 +14,12 @@
     "autostart:allow-disable",
     "autostart:allow-is-enabled",
     "dialog:allow-open",
+    "dialog:allow-save",
     "core:window:allow-minimize",
     "core:window:allow-toggle-maximize",
     "core:window:allow-close",
     "core:window:allow-set-ignore-cursor-events",
-    "fs:allow-read-text-file"
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file"
   ]
 }

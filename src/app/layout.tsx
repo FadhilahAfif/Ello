@@ -11,6 +11,7 @@ import {
 } from "../lib/events";
 import { Dashboard } from "../pages/Dashboard";
 import { History } from "../pages/History";
+import { Stats } from "../pages/Stats";
 import { Vocabulary } from "../pages/Vocabulary";
 import { AiPolish } from "../pages/AiPolish";
 import { Models } from "../pages/Models";
@@ -23,6 +24,7 @@ import type { Route } from "./router";
 const PAGES: Record<Route, ComponentType> = {
   "/dashboard": Dashboard,
   "/history": History,
+  "/stats": Stats,
   "/vocabulary": Vocabulary,
   "/ai-polish": AiPolish,
   "/models": Models,
@@ -34,6 +36,7 @@ const PAGES: Record<Route, ComponentType> = {
 const CONTAINER_WIDTH: Record<Route, string> = {
   "/dashboard": "max-w-[880px]",
   "/history": "max-w-[880px]",
+  "/stats": "max-w-[880px]",
   "/vocabulary": "max-w-[880px]",
   "/ai-polish": "max-w-[680px]",
   "/models": "max-w-[720px]",

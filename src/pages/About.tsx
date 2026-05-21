@@ -29,9 +29,9 @@ export function About() {
 
       <Section eyebrow="Links" title="Project" flush>
         <div className="flex flex-col">
-          <LinkRow href="https://github.com/aficraft/ello" label="Source" />
-          <LinkRow href="https://github.com/aficraft/ello/issues" label="Issues" />
-          <LinkRow href="https://github.com/aficraft/ello/releases" label="Releases" />
+          <LinkRow href="https://github.com/FadhilahAfif/Ello" label="Source" />
+          <LinkRow href="https://github.com/FadhilahAfif/Ello/issues" label="Issues" />
+          <LinkRow href="https://github.com/FadhilahAfif/Ello/releases" label="Releases" />
         </div>
       </Section>
     </div>

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 export const ROUTES = [
   "/dashboard",
   "/history",
+  "/stats",
   "/vocabulary",
   "/ai-polish",
   "/models",
