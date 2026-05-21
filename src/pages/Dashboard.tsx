@@ -28,7 +28,7 @@ export function Dashboard() {
   const error = useSettingsStore((s) => s.error);
 
   const [recentItems, setRecentItems] = useState<HistoryItem[]>([]);
-  const [todayStats, setTodayStats] = useState<StatsSummary | null>(null);
+  const [weekStats, setWeekStats] = useState<StatsSummary | null>(null);
 
   const isRecording = status === "recording";
   const activeDevice = devices.find((d) => d.id === settings.micDeviceId) ?? devices.find((d) => d.isDefault);
@@ -42,7 +42,7 @@ export function Dashboard() {
         statsSummary(7),
       ]);
       setRecentItems(items);
-      setTodayStats(stats);
+      setWeekStats(stats);
     } catch {
       // non-critical — dashboard still works without history/stats
     }
@@ -106,11 +106,11 @@ export function Dashboard() {
           onClick={() => { window.location.hash = "/settings#audio"; }}
           truncate
         />
-        {todayStats ? (
+        {weekStats ? (
           <ConfigItem
             label="Last 7 days"
-            value={`${todayStats.words.toLocaleString()} words`}
-            sub={`${todayStats.sessions} session${todayStats.sessions !== 1 ? "s" : ""}`}
+            value={`${weekStats.words.toLocaleString()} words`}
+            sub={`${weekStats.sessions} session${weekStats.sessions !== 1 ? "s" : ""}`}
             onClick={() => navigate("/stats")}
           />
         ) : (

@@ -13,6 +13,7 @@ import {
   historyExport,
   type HistoryItem,
 } from "../lib/invoke";
+import { formatDuration } from "../lib/format";
 
 const PAGE_SIZE = 100;
 
@@ -20,13 +21,6 @@ function formatDate(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) +
     " " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-}
-
-function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  const s = Math.round(ms / 1000);
-  if (s < 60) return `${s}s`;
-  return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
 export function History() {
@@ -113,7 +107,13 @@ export function History() {
   };
 
   const handleExport = async () => {
-    const ids = selected.size > 0 ? Array.from(selected) : items.map((r) => r.id);
+    let ids: number[];
+    if (selected.size > 0) {
+      ids = Array.from(selected);
+    } else {
+      const all = await historyList(debouncedQuery || null, 100_000, 0);
+      ids = all.map((r) => r.id);
+    }
     if (ids.length === 0) return;
     try {
       const ext = exportFormat === "markdown" ? "md" : exportFormat;
@@ -333,7 +333,7 @@ function HistoryRow({
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-[var(--space-1)] opacity-0 group-hover:opacity-100 transition-opacity duration-150 shrink-0">
+      <div className="flex items-center gap-[var(--space-1)] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 shrink-0">
         <button
           onClick={onCopy}
           aria-label="Copy transcript"
@@ -366,7 +366,7 @@ function EmptyState({ hasQuery }: { hasQuery: boolean }) {
         <p className="font-[var(--font-mono)] text-[12px] text-[var(--text-secondary)]" style={{ maxWidth: "52ch", lineHeight: 1.7 }}>
           {hasQuery
             ? "Try a different search term or clear the query to see all transcripts."
-            : "Press your hotkey to record. Each transcript is saved here when history is enabled in Settings."}
+            : "Press your hotkey to record. Each transcript is automatically saved here."}
         </p>
       </div>
     </div>

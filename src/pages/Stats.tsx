@@ -3,18 +3,9 @@ import { BarChart2 } from "lucide-react";
 import { Section } from "../components/Section";
 import { statsSummary, type StatsSummary } from "../lib/invoke";
 import { toast } from "../components/ui/Toast";
+import { formatDuration } from "../lib/format";
 
 type Range = 7 | 30 | 90;
-
-function formatDuration(ms: number): string {
-  const totalSeconds = Math.round(ms / 1000);
-  if (totalSeconds < 60) return `${totalSeconds}s`;
-  const m = Math.floor(totalSeconds / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  const rem = m % 60;
-  return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
-}
 
 function estimateTimeSaved(words: number): string {
   const avgTypingWpm = 40;
@@ -238,7 +229,7 @@ function EmptyState() {
           No data yet
         </p>
         <p className="font-[var(--font-mono)] text-[12px] text-[var(--text-secondary)]" style={{ maxWidth: "52ch", lineHeight: 1.7 }}>
-          Stats are recorded after each transcription session. Make sure "Track usage stats" is enabled in Settings.
+          Stats are recorded automatically after each transcription session.
         </p>
       </div>
     </div>
