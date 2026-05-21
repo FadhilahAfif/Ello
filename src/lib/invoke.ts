@@ -61,6 +61,19 @@ export const vocabularyUpsert = (rule: VocabularyUpsert) =>
 export const vocabularyDelete = (id: number) => invoke<void>("vocabulary_delete", { id });
 export const vocabularyImportCsv = (csv: string) =>
   invoke<number>("vocabulary_import_csv", { csv });
+export interface StatsSummary {
+  sessions: number;
+  words: number;
+  totalDurationMs: number;
+  avgWpm: number;
+}
+
 export const historyList = (query: string | null, limit: number, offset: number) =>
   invoke<HistoryItem[]>("history_list", { query, limit, offset });
+export const historyGet = (id: number) => invoke<HistoryItem>("history_get", { id });
+export const historyDelete = (id: number) => invoke<void>("history_delete", { id });
+export const historyClear = () => invoke<void>("history_clear");
+export const historyExport = (ids: number[], format: string) =>
+  invoke<string>("history_export", { ids, format });
+export const statsSummary = (range: number) => invoke<StatsSummary>("stats_summary", { range });
 export const polishTest = (text: string) => invoke<string>("polish_test", { text });
