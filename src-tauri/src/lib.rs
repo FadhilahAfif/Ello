@@ -113,6 +113,7 @@ pub fn run() {
             commands::get_devices,
             commands::start_recording,
             commands::stop_recording,
+            commands::set_overlay_geometry,
             models::get_model_manifest,
             models::download_model,
             models::cancel_download,

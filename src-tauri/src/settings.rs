@@ -25,6 +25,46 @@ impl Default for AiPolishSettings {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum OverlayStyle {
+    #[default]
+    Card,
+    Dot,
+    Pill,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum OverlayColor {
+    #[default]
+    Accent,
+    Amber,
+    Cyan,
+    Green,
+    White,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum OverlayPosition {
+    TopLeft,
+    #[default]
+    TopCenter,
+    TopRight,
+    BottomLeft,
+    BottomCenter,
+    BottomRight,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct OverlaySettings {
+    pub style: OverlayStyle,
+    pub color: OverlayColor,
+    pub position: OverlayPosition,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
@@ -47,6 +87,9 @@ pub struct AppSettings {
     pub onboarding_complete: bool,
     pub last_seen_version: Option<String>,
     pub update_channel: String,
+    // v3 fields
+    #[serde(default)]
+    pub overlay: OverlaySettings,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
@@ -68,7 +111,7 @@ pub enum HotkeyMode {
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
-            schema_version: 2,
+            schema_version: 3,
             groq_api_key: None,
             cloud_model: "whisper-large-v3-turbo".to_string(),
             transcription_mode: TranscriptionMode::default(),
@@ -86,6 +129,7 @@ impl Default for AppSettings {
             onboarding_complete: false,
             last_seen_version: None,
             update_channel: "stable".to_string(),
+            overlay: OverlaySettings::default(),
         }
     }
 }
@@ -102,6 +146,14 @@ fn migrate_v1_to_v2(mut settings: AppSettings) -> AppSettings {
         settings.onboarding_complete = defaults.onboarding_complete;
         settings.last_seen_version = defaults.last_seen_version;
         settings.update_channel = defaults.update_channel;
+    }
+    settings
+}
+
+fn migrate_v2_to_v3(mut settings: AppSettings) -> AppSettings {
+    if settings.schema_version < 3 {
+        settings.schema_version = 3;
+        // overlay already populated by #[serde(default)]; bump version only
     }
     settings
 }
@@ -132,7 +184,12 @@ impl SettingsManager {
             let settings: AppSettings = if version < 2 {
                 let partial: AppSettingsV1 =
                     serde_json::from_value(raw).map_err(|e| AppError::Settings(e.to_string()))?;
-                migrate_v1_to_v2(partial.into())
+                let migrated = migrate_v1_to_v2(partial.into());
+                migrate_v2_to_v3(migrated)
+            } else if version < 3 {
+                let s: AppSettings =
+                    serde_json::from_value(raw).map_err(|e| AppError::Settings(e.to_string()))?;
+                migrate_v2_to_v3(s)
             } else {
                 serde_json::from_value(raw).map_err(|e| AppError::Settings(e.to_string()))?
             };
@@ -211,6 +268,7 @@ impl From<AppSettingsV1> for AppSettings {
             onboarding_complete: defaults.onboarding_complete,
             last_seen_version: defaults.last_seen_version,
             update_channel: defaults.update_channel,
+            overlay: defaults.overlay,
         }
     }
 }
@@ -223,7 +281,7 @@ mod tests {
     #[test]
     fn default_settings_schema_v2() {
         let settings = serde_json::to_value(AppSettings::default()).unwrap();
-        assert_eq!(settings["schemaVersion"], json!(2));
+        assert_eq!(settings["schemaVersion"], json!(3));
         assert_eq!(settings["historyEnabled"], json!(true));
         assert_eq!(settings["statsEnabled"], json!(true));
         assert_eq!(settings["onboardingComplete"], json!(false));
@@ -261,5 +319,50 @@ mod tests {
         // v1 fields preserved
         assert_eq!(migrated.cloud_model, "whisper-large-v3-turbo");
         assert_eq!(migrated.hotkey, "Alt+Shift+R");
+    }
+
+    #[test]
+    fn default_settings_schema_v3() {
+        let settings = serde_json::to_value(AppSettings::default()).unwrap();
+        assert_eq!(settings["schemaVersion"], json!(3));
+        assert_eq!(settings["overlay"]["style"], json!("card"));
+        assert_eq!(settings["overlay"]["color"], json!("accent"));
+        assert_eq!(settings["overlay"]["position"], json!("topCenter"));
+    }
+
+    #[test]
+    fn v2_blob_migrates_to_v3() {
+        let v2_blob = json!({
+            "schemaVersion": 2,
+            "groqApiKey": null,
+            "cloudModel": "whisper-large-v3-turbo",
+            "transcriptionMode": "cloud",
+            "hotkeyMode": "toggle",
+            "autostartEnabled": false,
+            "micDeviceId": null,
+            "localModelPath": null,
+            "language": null,
+            "hotkey": "Alt+Shift+D",
+            "theme": "dark",
+            "accentColor": "#e8a020",
+            "aiPolish": {
+                "enabled": false,
+                "model": "llama-3.3-70b-versatile",
+                "prompt": "Remove filler words and fix grammar without changing meaning.",
+                "minWordCount": 10
+            },
+            "historyEnabled": true,
+            "statsEnabled": true,
+            "onboardingComplete": false,
+            "lastSeenVersion": null,
+            "updateChannel": "stable"
+        });
+        let s: AppSettings = serde_json::from_value(v2_blob).unwrap();
+        let migrated = migrate_v2_to_v3(s);
+        assert_eq!(migrated.schema_version, 3);
+        assert_eq!(migrated.overlay.style, OverlayStyle::Card);
+        assert_eq!(migrated.overlay.color, OverlayColor::Accent);
+        assert_eq!(migrated.overlay.position, OverlayPosition::TopCenter);
+        assert_eq!(migrated.accent_color, "#e8a020");
     }
 }

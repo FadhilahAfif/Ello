@@ -63,6 +63,67 @@ pub fn save_settings(app: AppHandle, settings: crate::settings::AppSettings) -> 
         }
     }
 
+    app.emit("overlay-settings-changed", &settings.overlay)
+        .map_err(|e| AppError::Settings(e.to_string()))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn set_overlay_geometry(
+    app: AppHandle,
+    style: crate::settings::OverlayStyle,
+    position: crate::settings::OverlayPosition,
+) -> Result<()> {
+    let overlay = match app.get_webview_window("overlay") {
+        Some(w) => w,
+        None => return Ok(()),
+    };
+
+    let monitor = overlay
+        .primary_monitor()
+        .ok()
+        .flatten()
+        .ok_or_else(|| AppError::Settings("No primary monitor".into()))?;
+
+    let screen_w = monitor.size().width as i32;
+    let screen_h = monitor.size().height as i32;
+
+    const CARD_W: i32 = 320;
+    const CARD_H: i32 = 60;
+    const DOT_W: i32 = 32;
+    const DOT_H: i32 = 32;
+    const PILL_W: i32 = 220;
+    const PILL_H: i32 = 44;
+
+    let (win_w, win_h): (i32, i32) = match style {
+        crate::settings::OverlayStyle::Card => (CARD_W, CARD_H),
+        crate::settings::OverlayStyle::Dot => (DOT_W, DOT_H),
+        crate::settings::OverlayStyle::Pill => (PILL_W, PILL_H),
+    };
+
+    let margin = 16i32;
+
+    let (x, y) = match position {
+        crate::settings::OverlayPosition::TopLeft => (margin, 0),
+        crate::settings::OverlayPosition::TopCenter => ((screen_w - win_w) / 2, 0),
+        crate::settings::OverlayPosition::TopRight => (screen_w - win_w - margin, 0),
+        crate::settings::OverlayPosition::BottomLeft => (margin, screen_h - win_h - margin),
+        crate::settings::OverlayPosition::BottomCenter => {
+            ((screen_w - win_w) / 2, screen_h - win_h - margin)
+        }
+        crate::settings::OverlayPosition::BottomRight => {
+            (screen_w - win_w - margin, screen_h - win_h - margin)
+        }
+    };
+
+    overlay.hide().ok();
+    overlay
+        .set_size(tauri::PhysicalSize::new(win_w as u32, win_h as u32))
+        .map_err(|e| AppError::Settings(e.to_string()))?;
+    overlay
+        .set_position(tauri::PhysicalPosition::new(x, y))
+        .map_err(|e| AppError::Settings(e.to_string()))?;
+    overlay.show().ok();
     Ok(())
 }
 

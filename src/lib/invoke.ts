@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, AudioDevice } from "../store/settings";
+import type { AppSettings, AudioDevice, OverlayStyle, OverlayPosition } from "../store/settings";
 
 export interface ModelManifestEntry {
   id: string;
@@ -77,3 +77,6 @@ export const historyExport = (ids: number[], format: string) =>
   invoke<string>("history_export", { ids, format });
 export const statsSummary = (range: number) => invoke<StatsSummary>("stats_summary", { range });
 export const polishTest = (text: string) => invoke<string>("polish_test", { text });
+
+export const setOverlayGeometry = (style: OverlayStyle, position: OverlayPosition) =>
+  invoke<void>("set_overlay_geometry", { style, position });
