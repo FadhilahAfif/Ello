@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSettingsStore } from "../store/settings";
-import { saveSettings } from "../lib/invoke";
+import { saveSettings, setOverlayGeometry } from "../lib/invoke";
+import type { OverlayStyle, OverlayColor, OverlayPosition } from "../store/settings";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
@@ -21,6 +22,7 @@ const NAV_SECTIONS = [
   { id: "hotkey", label: "Hotkey" },
   { id: "behavior", label: "Behavior" },
   { id: "polish", label: "AI Polish" },
+  { id: "overlay", label: "Overlay" },
 ] as const;
 
 type NavId = typeof NAV_SECTIONS[number]["id"];
@@ -35,6 +37,7 @@ export function Settings() {
     hotkey: null,
     behavior: null,
     polish: null,
+    overlay: null,
   });
 
   // Scroll-spy: highlight the in-page nav based on which section is most visible.
@@ -57,12 +60,17 @@ export function Settings() {
     setError(null);
     try {
       await saveSettings(settings);
-      setSettings(settings);
     } catch (e) {
       setError(String(e));
-    } finally {
       setSaving(false);
+      return;
     }
+    try {
+      await setOverlayGeometry(settings.overlay.style, settings.overlay.position);
+    } catch {
+    }
+    setSettings(settings);
+    setSaving(false);
   };
 
   const scrollTo = (id: NavId) => {
@@ -303,6 +311,104 @@ export function Settings() {
                   <ArrowUpRight size={12} strokeWidth={1.6} className="transition-transform duration-150 group-hover:translate-x-[1px] group-hover:-translate-y-[1px]" />
                 </button>
               </Row>
+            </Section>
+          </div>
+
+          {/* OVERLAY */}
+          <div ref={(el) => { sectionRefs.current.overlay = el; }} id="overlay" className="scroll-mt-[var(--space-8)]">
+            <Section eyebrow="Overlay" title="Recording indicator">
+              <div className="flex flex-col gap-[var(--space-6)]">
+
+                {/* Style picker */}
+                <div className="flex flex-col gap-[var(--space-3)]">
+                  <span className="text-[12px] text-[var(--text-primary)]">Style</span>
+                  <div className="grid grid-cols-3 gap-[var(--space-2)]">
+                    {(["card", "dot", "pill"] as OverlayStyle[]).map((s) => {
+                      const active = settings.overlay.style === s;
+                      const labels: Record<OverlayStyle, string> = { card: "Card", dot: "Dot", pill: "Pill" };
+                      const descs: Record<OverlayStyle, string> = {
+                        card: "Top-docked band with mic bars",
+                        dot:  "Single pulsing corner dot",
+                        pill: "Floating pill with waveform",
+                      };
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => patchSetting("overlay", { ...settings.overlay, style: s })}
+                          aria-pressed={active}
+                          className={`text-left rounded-[var(--radius-md)] border px-[var(--space-3)] py-[var(--space-3)] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-base)] ${
+                            active
+                              ? "bg-[var(--bg-raised)] border-[var(--accent)]"
+                              : "bg-transparent border-[var(--border-hairline)] hover:border-[var(--border)] hover:bg-[var(--bg-raised)]"
+                          }`}
+                        >
+                          <span className={`block text-[12px] font-medium mb-[2px] ${active ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]"}`}>
+                            {labels[s]}
+                          </span>
+                          <span className="block text-[10px] text-[var(--text-tertiary)] leading-snug">{descs[s]}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Color swatches */}
+                <div className="flex flex-col gap-[var(--space-3)]">
+                  <span className="text-[12px] text-[var(--text-primary)]">Color</span>
+                  <div className="flex items-center gap-[var(--space-3)]">
+                    {([
+                      { key: "accent", hex: "conic-gradient(#e8a020 0deg 120deg,#22d3ee 120deg 240deg,#34d399 240deg 360deg)", label: "auto" },
+                      { key: "amber",  hex: "#e8a020", label: "amber" },
+                      { key: "cyan",   hex: "#22d3ee", label: "cyan"  },
+                      { key: "green",  hex: "#34d399", label: "green" },
+                      { key: "white",  hex: "#f0efeb", label: "white" },
+                    ] as { key: OverlayColor; hex: string; label: string }[]).map(({ key, hex, label }) => {
+                      const active = settings.overlay.color === key;
+                      return (
+                        <div key={key} className="flex flex-col items-center gap-[4px]">
+                          <button
+                            onClick={() => patchSetting("overlay", { ...settings.overlay, color: key })}
+                            aria-label={label}
+                            title={label}
+                            aria-pressed={active}
+                            className={`w-[24px] h-[24px] rounded-full transition-transform duration-150 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-base)] ${active ? "ring-2 ring-[var(--text-primary)] ring-offset-1 ring-offset-[var(--bg-base)]" : ""}`}
+                            style={{ background: hex }}
+                          />
+                          <span className="text-[9px] font-[var(--font-mono)] text-[var(--text-tertiary)]">{label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Position grid */}
+                <div className="flex flex-col gap-[var(--space-3)]">
+                  <span className="text-[12px] text-[var(--text-primary)]">Position</span>
+                  <div className="grid grid-cols-3 gap-[4px] w-fit">
+                    {([
+                      ["topLeft","TL"],["topCenter","TC"],["topRight","TR"],
+                      ["bottomLeft","BL"],["bottomCenter","BC"],["bottomRight","BR"],
+                    ] as [OverlayPosition, string][]).map(([pos, label]) => {
+                      const active = settings.overlay.position === pos;
+                      return (
+                        <button
+                          key={pos}
+                          onClick={() => patchSetting("overlay", { ...settings.overlay, position: pos })}
+                          aria-pressed={active}
+                          className={`w-[52px] h-[32px] rounded-[var(--radius-md)] border text-[9px] font-[var(--font-mono)] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-base)] ${
+                            active
+                              ? "border-[var(--accent)] text-[var(--accent)] bg-[var(--bg-raised)]"
+                              : "border-[var(--border-hairline)] text-[var(--text-tertiary)] hover:border-[var(--border)] hover:text-[var(--text-secondary)]"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+              </div>
             </Section>
           </div>
         </div>

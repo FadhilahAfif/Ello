@@ -2,6 +2,17 @@ import { create } from "zustand";
 
 export type TranscriptionMode = "cloud" | "local";
 export type HotkeyMode = "toggle" | "pushToTalk";
+export type OverlayStyle    = "card" | "dot" | "pill";
+export type OverlayColor    = "accent" | "amber" | "cyan" | "green" | "white";
+export type OverlayPosition =
+  | "topLeft" | "topCenter" | "topRight"
+  | "bottomLeft" | "bottomCenter" | "bottomRight";
+
+export interface OverlaySettings {
+  style:    OverlayStyle;
+  color:    OverlayColor;
+  position: OverlayPosition;
+}
 export type RecordingStatus = "idle" | "recording" | "transcribing";
 
 export interface AiPolishSettings {
@@ -26,13 +37,6 @@ export type ModelStatus =
   | { kind: "installed"; path: string }
   | { kind: "error"; message: string };
 
-export interface AiPolishSettings {
-  enabled: boolean;
-  model: string;
-  prompt: string;
-  minWordCount: number;
-}
-
 export interface AppSettings {
   schemaVersion: number;
   // Security: in-memory only — never log, serialize to UI, or pass as prop
@@ -52,6 +56,7 @@ export interface AppSettings {
   onboardingComplete: boolean;
   lastSeenVersion: string | null;
   updateChannel: string;
+  overlay: OverlaySettings;
 }
 
 export interface AudioDevice {
@@ -61,7 +66,7 @@ export interface AudioDevice {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   groqApiKey: null,
   cloudModel: "whisper-large-v3-turbo",
   transcriptionMode: "cloud",
@@ -83,6 +88,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   onboardingComplete: false,
   lastSeenVersion: null,
   updateChannel: "stable",
+  overlay: {
+    style:    "card",
+    color:    "accent",
+    position: "topCenter",
+  },
 };
 
 interface SettingsStore {
