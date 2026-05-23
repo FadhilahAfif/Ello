@@ -65,6 +65,11 @@ pub fn save_settings(app: AppHandle, settings: crate::settings::AppSettings) -> 
 
     app.emit("overlay-settings-changed", &settings.overlay)
         .map_err(|e| AppError::Settings(e.to_string()))?;
+
+    if let Err(e) = set_overlay_geometry(app, settings.overlay.style, settings.overlay.position) {
+        tracing::warn!("Failed to apply overlay geometry after settings save: {}", e);
+    }
+
     Ok(())
 }
 

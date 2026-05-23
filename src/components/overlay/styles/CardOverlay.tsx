@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import type { OverlayState } from "../shared/useOverlayState";
+import type { OverlayPosition } from "../../../store/settings";
 import { toVisual } from "../shared/overlayUtils";
 
 const BARS = 14;
@@ -9,7 +10,7 @@ interface Props {
   levelRef: React.MutableRefObject<number>;
   smoothedRef: React.MutableRefObject<number>;
   accent: string;
-  position: string;
+  position: OverlayPosition;
 }
 
 export function CardOverlay({ state, levelRef, smoothedRef, accent, position }: Props) {

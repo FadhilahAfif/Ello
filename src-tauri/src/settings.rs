@@ -279,7 +279,7 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn default_settings_schema_v2() {
+    fn default_settings_schema_v2_fields() {
         let settings = serde_json::to_value(AppSettings::default()).unwrap();
         assert_eq!(settings["schemaVersion"], json!(3));
         assert_eq!(settings["historyEnabled"], json!(true));

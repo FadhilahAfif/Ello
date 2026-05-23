@@ -10,11 +10,20 @@ export function useOverlayState() {
   useEffect(() => { stateRef.current = state; }, [state]);
 
   useEffect(() => {
+    let cancelled = false;
     const unsubs: Array<() => void> = [];
-    listen("recording-started",  () => setState("recording")).then(u => unsubs.push(u));
-    listen("recording-stopped",  () => setState("transcribing")).then(u => unsubs.push(u));
-    listen("transcription-done", () => setState("hidden")).then(u => unsubs.push(u));
-    return () => unsubs.forEach(u => u());
+
+    const register = (promise: Promise<() => void>) => {
+      promise.then(u => {
+        if (cancelled) { u(); } else { unsubs.push(u); }
+      });
+    };
+
+    register(listen("recording-started",  () => setState("recording")));
+    register(listen("recording-stopped",  () => setState("transcribing")));
+    register(listen("transcription-done", () => setState("hidden")));
+
+    return () => { cancelled = true; unsubs.forEach(u => u()); };
   }, []);
 
   return { state, stateRef };

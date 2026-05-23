@@ -83,16 +83,21 @@ pub fn run() {
             })?;
 
             if let Some(overlay) = app.get_webview_window("overlay") {
-                if let Ok(Some(monitor)) = overlay.primary_monitor() {
-                    let screen_w = monitor.size().width as i32;
-                    let win_w = 320i32;
-                    let x = (screen_w - win_w) / 2;
-                    overlay
-                        .set_position(tauri::PhysicalPosition::new(x, 0))
-                        .ok();
-                }
                 overlay.set_ignore_cursor_events(true).ok();
                 overlay.show().ok();
+            }
+
+            {
+                let persisted = crate::settings::SettingsManager::new(app.handle().clone())
+                    .get_settings()
+                    .unwrap_or_default();
+                if let Err(e) = crate::commands::set_overlay_geometry(
+                    app.handle().clone(),
+                    persisted.overlay.style,
+                    persisted.overlay.position,
+                ) {
+                    tracing::warn!("Failed to apply persisted overlay geometry on startup: {}", e);
+                }
             }
 
             Ok(())

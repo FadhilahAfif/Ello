@@ -67,7 +67,7 @@ export function OverlayApp() {
     display: "flex",
     justifyContent: isCenter ? "center" : isLeft ? "flex-start" : "flex-end",
     pointerEvents: "none",
-    padding: overlay.style === "card" ? 0 : 12,
+    padding: overlay.style === "pill" ? 12 : 0,
   };
 
   return (

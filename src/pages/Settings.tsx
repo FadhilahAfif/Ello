@@ -60,13 +60,17 @@ export function Settings() {
     setError(null);
     try {
       await saveSettings(settings);
-      await setOverlayGeometry(settings.overlay.style, settings.overlay.position);
-      setSettings(settings);
     } catch (e) {
       setError(String(e));
-    } finally {
       setSaving(false);
+      return;
     }
+    try {
+      await setOverlayGeometry(settings.overlay.style, settings.overlay.position);
+    } catch {
+    }
+    setSettings(settings);
+    setSaving(false);
   };
 
   const scrollTo = (id: NavId) => {

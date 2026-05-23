@@ -6,10 +6,11 @@ export function useMicLevel() {
   const smoothedRef = useRef(0);
 
   useEffect(() => {
+    let cancelled = false;
     let unsub: (() => void) | null = null;
     listen<number>("mic-level", e => { levelRef.current = e.payload; })
-      .then(u => { unsub = u; });
-    return () => { unsub?.(); };
+      .then(u => { if (cancelled) { u(); } else { unsub = u; } });
+    return () => { cancelled = true; unsub?.(); };
   }, []);
 
   return { levelRef, smoothedRef };
