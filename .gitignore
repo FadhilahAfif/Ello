@@ -27,3 +27,4 @@ docs
 *.sw?
 
 DESIGN.md
+src-tauri/updater-priv.key

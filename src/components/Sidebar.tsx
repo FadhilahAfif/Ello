@@ -3,7 +3,6 @@ import {
   History as HistoryIcon,
   BarChart2,
   BookOpen,
-  Sparkles,
   Download,
   Settings as SettingsIcon,
   Info,
@@ -23,7 +22,6 @@ const TOP_ITEMS: NavItem[] = [
   { route: "/history", label: "History", Icon: HistoryIcon },
   { route: "/stats", label: "Stats", Icon: BarChart2 },
   { route: "/vocabulary", label: "Vocabulary", Icon: BookOpen },
-  { route: "/ai-polish", label: "AI Polish", Icon: Sparkles },
   { route: "/models", label: "Models", Icon: Download },
   { route: "/settings", label: "Settings", Icon: SettingsIcon },
 ];

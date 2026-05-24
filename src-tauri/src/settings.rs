@@ -5,26 +5,6 @@ use tauri_plugin_store::StoreExt;
 
 pub const SETTINGS_FILE: &str = "settings.json";
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct AiPolishSettings {
-    pub enabled: bool,
-    pub model: String,
-    pub prompt: String,
-    pub min_word_count: u32,
-}
-
-impl Default for AiPolishSettings {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            model: "llama-3.3-70b-versatile".to_string(),
-            prompt: "Remove filler words and fix grammar without changing meaning.".to_string(),
-            min_word_count: 10,
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum OverlayStyle {
@@ -81,7 +61,6 @@ pub struct AppSettings {
     // v2 fields
     pub theme: String,
     pub accent_color: String,
-    pub ai_polish: AiPolishSettings,
     pub history_enabled: bool,
     pub stats_enabled: bool,
     pub onboarding_complete: bool,
@@ -123,7 +102,6 @@ impl Default for AppSettings {
             hotkey: crate::hotkey::DEFAULT_HOTKEY.to_string(),
             theme: "dark".to_string(),
             accent_color: "#7c5cff".to_string(),
-            ai_polish: AiPolishSettings::default(),
             history_enabled: true,
             stats_enabled: true,
             onboarding_complete: false,
@@ -140,7 +118,6 @@ fn migrate_v1_to_v2(mut settings: AppSettings) -> AppSettings {
         settings.schema_version = 2;
         settings.theme = defaults.theme;
         settings.accent_color = defaults.accent_color;
-        settings.ai_polish = defaults.ai_polish;
         settings.history_enabled = defaults.history_enabled;
         settings.stats_enabled = defaults.stats_enabled;
         settings.onboarding_complete = defaults.onboarding_complete;
@@ -262,7 +239,6 @@ impl From<AppSettingsV1> for AppSettings {
             hotkey: v1.hotkey,
             theme: defaults.theme,
             accent_color: defaults.accent_color,
-            ai_polish: defaults.ai_polish,
             history_enabled: defaults.history_enabled,
             stats_enabled: defaults.stats_enabled,
             onboarding_complete: defaults.onboarding_complete,
@@ -314,8 +290,6 @@ mod tests {
         assert!(migrated.stats_enabled);
         assert!(!migrated.onboarding_complete);
         assert_eq!(migrated.update_channel, "stable");
-        assert!(!migrated.ai_polish.enabled);
-        assert_eq!(migrated.ai_polish.min_word_count, 10);
         // v1 fields preserved
         assert_eq!(migrated.cloud_model, "whisper-large-v3-turbo");
         assert_eq!(migrated.hotkey, "Alt+Shift+R");
@@ -345,12 +319,6 @@ mod tests {
             "hotkey": "Alt+Shift+D",
             "theme": "dark",
             "accentColor": "#e8a020",
-            "aiPolish": {
-                "enabled": false,
-                "model": "llama-3.3-70b-versatile",
-                "prompt": "Remove filler words and fix grammar without changing meaning.",
-                "minWordCount": 10
-            },
             "historyEnabled": true,
             "statsEnabled": true,
             "onboardingComplete": false,

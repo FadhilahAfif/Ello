@@ -4,9 +4,9 @@ pub mod db;
 pub mod errors;
 pub mod history;
 pub mod hotkey;
+pub mod io;
 pub mod models;
 pub mod output;
-pub mod polish;
 pub mod settings;
 pub mod stats;
 pub mod transcribe;
@@ -96,7 +96,10 @@ pub fn run() {
                     persisted.overlay.style,
                     persisted.overlay.position,
                 ) {
-                    tracing::warn!("Failed to apply persisted overlay geometry on startup: {}", e);
+                    tracing::warn!(
+                        "Failed to apply persisted overlay geometry on startup: {}",
+                        e
+                    );
                 }
             }
 
@@ -112,12 +115,14 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             commands::get_settings,
             commands::save_settings,
             commands::get_devices,
             commands::start_recording,
             commands::stop_recording,
+            commands::record_mic_test,
             commands::set_overlay_geometry,
             models::get_model_manifest,
             models::download_model,
@@ -134,7 +139,9 @@ pub fn run() {
             vocabulary::vocabulary_delete,
             vocabulary::vocabulary_import_csv,
             stats::stats_summary,
-            polish::polish_test,
+            io::export_config,
+            io::import_config,
+            io::apply_import,
         ])
         .on_window_event(|window, event| {
             if window.label() == "main" {

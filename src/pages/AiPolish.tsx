@@ -13,7 +13,7 @@ const POLISH_MODELS = [
   { value: "llama-3.3-70b-versatile", label: "Llama 3.3 70B (versatile)" },
   { value: "llama-3.1-8b-instant", label: "Llama 3.1 8B (instant)" },
   { value: "llama-3.1-70b-versatile", label: "Llama 3.1 70B (versatile)" },
-  { value: "custom", label: "Custom…" },
+  { value: "custom", label: "CustomΓÇª" },
 ];
 
 const PROMPT_TEMPLATES = [
@@ -124,7 +124,7 @@ export function AiPolish() {
                   onClick={() => (window.location.hash = "/settings")}
                   className="underline underline-offset-2 hover:text-[var(--text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)] rounded"
                 >
-                  Settings → Cloud
+                  Settings ΓåÆ Cloud
                 </button>
                 .
               </span>
@@ -133,7 +133,7 @@ export function AiPolish() {
         </div>
       </Section>
 
-      {/* Model — only shown when enabled */}
+      {/* Model ΓÇö only shown when enabled */}
       {polish.enabled && (
         <Section eyebrow="Model" title="Language model">
           <div className="flex flex-col gap-[var(--space-3)]">
@@ -164,7 +164,7 @@ export function AiPolish() {
         </Section>
       )}
 
-      {/* Prompt — only shown when enabled */}
+      {/* Prompt ΓÇö only shown when enabled */}
       {polish.enabled && (
         <Section eyebrow="Prompt" title="System prompt">
           <div className="flex flex-col gap-[var(--space-3)]">
@@ -191,7 +191,7 @@ export function AiPolish() {
         </Section>
       )}
 
-      {/* Threshold — only shown when enabled */}
+      {/* Threshold ΓÇö only shown when enabled */}
       {polish.enabled && (
         <Section eyebrow="Threshold" title="Minimum word count">
           <div className="flex flex-col gap-[var(--space-3)]">
@@ -227,7 +227,7 @@ export function AiPolish() {
               disabled={testing}
               aria-busy={testing}
             >
-              {testing ? "Testing…" : "Test on last transcript"}
+              {testing ? "TestingΓÇª" : "Test on last transcript"}
             </Button>
           </div>
           {(testRaw !== null || testPolished !== null) && (
@@ -276,7 +276,7 @@ export function AiPolish() {
           <div className="flex items-center justify-between gap-[var(--space-4)] bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[var(--radius-lg)] px-[var(--space-4)] py-[var(--space-3)] shadow-lg">
             <span className="text-[12px] text-[var(--text-secondary)]">You have unsaved changes.</span>
             <Button variant="solid" size="sm" onClick={handleSave} disabled={saving}>
-              {saving ? "Saving…" : "Save changes"}
+              {saving ? "SavingΓÇª" : "Save changes"}
             </Button>
           </div>
         </div>

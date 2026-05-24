@@ -1,10 +1,38 @@
+import { useState, useEffect } from "react";
 import { Wordmark } from "../components/ui/Wordmark";
 import { Section } from "../components/Section";
-import { ExternalLink } from "lucide-react";
-
-const APP_VERSION = "0.1.0";
+import { Button } from "../components/ui/Button";
+import { ExternalLink, RefreshCw, Loader2 } from "lucide-react";
+import { getVersion } from "@tauri-apps/api/app";
+import { check } from "@tauri-apps/plugin-updater";
+import { toast } from "../components/ui/Toast";
 
 export function About() {
+  const [version, setVersion] = useState<string>("…");
+  const [checking, setChecking] = useState(false);
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
+
+  useEffect(() => {
+    getVersion().then(setVersion).catch(() => setVersion("unknown"));
+  }, []);
+
+  const handleCheckUpdates = async () => {
+    setChecking(true);
+    try {
+      const update = await check();
+      setLastChecked(new Date());
+      if (update?.available) {
+        toast(`Update available: v${update.version}`, "info");
+      } else {
+        toast("You're on the latest version.", "info");
+      }
+    } catch {
+      toast("Update check failed. Check your connection.", "error");
+    } finally {
+      setChecking(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-[var(--space-10)]">
       <div className="flex flex-col gap-[var(--space-4)]">
@@ -21,9 +49,42 @@ export function About() {
 
       <Section eyebrow="Build" title="Version" flush>
         <div className="flex flex-col gap-[var(--space-3)] font-[var(--font-mono)] text-[12px]">
-          <Row label="Version" value={APP_VERSION} />
+          <Row label="Version" value={version} />
           <Row label="Channel" value="stable" />
           <Row label="License" value="MIT" />
+        </div>
+      </Section>
+
+      <Section eyebrow="Updates" title="Auto-update" flush>
+        <div className="flex flex-col gap-[var(--space-4)]">
+          <div className="flex items-center gap-[var(--space-3)]">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleCheckUpdates}
+              disabled={checking}
+            >
+              {checking ? (
+                <span className="inline-flex items-center gap-[6px]">
+                  <Loader2 size={12} strokeWidth={1.6} className="animate-spin" />
+                  Checking
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-[6px]">
+                  <RefreshCw size={12} strokeWidth={1.6} />
+                  Check for updates
+                </span>
+              )}
+            </Button>
+            {lastChecked && (
+              <span className="text-[11px] text-[var(--text-tertiary)] font-[var(--font-mono)]">
+                checked {lastChecked.toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] text-[var(--text-tertiary)] font-[var(--font-mono)]">
+            Release notes: github.com/YOUR_ORG/ello/releases
+          </p>
         </div>
       </Section>
 
