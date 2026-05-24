@@ -83,7 +83,7 @@ export function About() {
             )}
           </div>
           <p className="text-[11px] text-[var(--text-tertiary)] font-[var(--font-mono)]">
-            Release notes: github.com/YOUR_ORG/ello/releases
+            Release notes: https://github.com/FadhilahAfif/Ello/releases
           </p>
         </div>
       </Section>

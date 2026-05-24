@@ -1,4 +1,5 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
+import { toast } from "../components/ui/Toast";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { useSettingsStore } from "../store/settings";
@@ -40,9 +41,10 @@ export function Onboarding() {
       for (const [k, v] of Object.entries(patches)) {
         patchSetting(k as keyof typeof settings, v as never);
       }
-    } catch {
+      advance();
+    } catch (e) {
+      toast(String(e), "error");
     }
-    advance();
   };
 
   return (

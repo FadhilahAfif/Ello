@@ -5,7 +5,7 @@ use crate::vocabulary::VocabularyRule;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, State};
 
-const EXPORT_SCHEMA_VERSION: u32 = 2;
+const EXPORT_SCHEMA_VERSION: u32 = 3;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -92,11 +92,12 @@ pub fn apply_import(app: AppHandle, db: State<Db>, json: String) -> Result<()> {
     SettingsManager::new(app).save_settings(&config.settings)?;
 
     let conn = db.lock()?;
-    conn.execute("DELETE FROM vocabulary", [])
-        .map_err(|e| AppError::Database(e.to_string()))?;
 
     let tx = conn
         .unchecked_transaction()
+        .map_err(|e| AppError::Database(e.to_string()))?;
+
+    tx.execute("DELETE FROM vocabulary", [])
         .map_err(|e| AppError::Database(e.to_string()))?;
 
     for rule in &config.vocabulary {

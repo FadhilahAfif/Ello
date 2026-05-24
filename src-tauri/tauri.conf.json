@@ -40,7 +40,7 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZDMEE3RDg1OTRBRDA2MjQKUldRa0JxMlVoWDBLL05Jc3BVUHkxYUJXSzlHejN3L0F4SEVnTVRydGdvY2ZGRzhDTXdTWnF0aGMK",
-      "endpoints": ["https://github.com/YOUR_ORG/ello/releases/latest/download/latest.json"]
+      "endpoints": ["https://github.com/FadhilahAfif/Ello/releases/latest/download/latest.json"]
     }
   },
   "bundle": {
