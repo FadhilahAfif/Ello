@@ -1,4 +1,4 @@
-import { useEffect, type ComponentType } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { TitleBar } from "../components/TitleBar";
 import { ToastContainer } from "../components/ui/Toast";
@@ -44,11 +44,12 @@ const CONTAINER_WIDTH: Record<Route, string> = {
 
 export function AppLayout() {
   const route = useRoute();
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   useEffect(() => {
     const { setSettings, setDevices, setError } = useSettingsStore.getState();
 
-    getSettings().then(setSettings).catch((e) => setError(String(e)));
+    getSettings().then((s) => { setSettings(s); setSettingsLoaded(true); }).catch((e) => { setError(String(e)); setSettingsLoaded(true); });
     getDevices().then((d) => { if (d.length > 0) setDevices(d); }).catch(console.error);
   }, []);
 
@@ -75,11 +76,19 @@ export function AppLayout() {
   }, []);
 
   const { settings } = useSettingsStore();
-  const onboarding = !settings.onboardingComplete;
+  const onboarding = settingsLoaded && !settings.onboardingComplete;
   const effectiveRoute = onboarding ? "/onboarding" : route;
 
   const Page = PAGES[effectiveRoute] ?? Dashboard;
   const widthClass = CONTAINER_WIDTH[effectiveRoute] ?? "max-w-[880px]";
+
+  if (!settingsLoaded) {
+    return (
+      <div className="flex flex-col h-screen overflow-hidden bg-[var(--bg-base)]">
+        <TitleBar />
+      </div>
+    );
+  }
 
   if (onboarding) {
     return (

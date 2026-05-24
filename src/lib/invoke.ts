@@ -76,7 +76,6 @@ export const historyClear = () => invoke<void>("history_clear");
 export const historyExport = (ids: number[], format: string) =>
   invoke<string>("history_export", { ids, format });
 export const statsSummary = (range: number) => invoke<StatsSummary>("stats_summary", { range });
-export const polishTest = (text: string) => invoke<string>("polish_test", { text });
 export const setOverlayGeometry = (style: OverlayStyle, position: OverlayPosition) =>
   invoke<void>("set_overlay_geometry", { style, position });
 

@@ -490,38 +490,6 @@ export function Settings() {
               </div>
             </Section>
           </div>
-        </div>
-      </div>
-
-      {/* Sticky save bar */}
-      <div
-        aria-hidden={!dirty}
-        className={`fixed bottom-0 left-[56px] right-0 pointer-events-none transition-opacity duration-200 ${
-          dirty ? "opacity-100" : "opacity-0"
-        }`}
-        style={{ zIndex: 40 }}
-      >
-        <div
-          className="pointer-events-auto mx-auto max-w-[1080px] px-[var(--space-6)] sm:px-[var(--space-10)] pb-[var(--space-5)]"
-          style={dirty ? { animation: "save-bar-in 220ms var(--ease-out-quart)" } : undefined}
-        >
-          <div className="flex items-center justify-between gap-[var(--space-4)] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--bg-elevated)] px-[var(--space-5)] py-[var(--space-3)] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
-            <div className="flex items-center gap-[var(--space-3)]">
-              <span className="block w-[6px] h-[6px] rounded-full" style={{ background: "var(--accent)" }} />
-              <span className="text-[12px] text-[var(--text-secondary)]">Unsaved changes.</span>
-            </div>
-            <Button onClick={handleSave} disabled={saving} variant="default">
-              {saving ? (
-                <span className="inline-flex items-center gap-[6px]">
-                  <Loader2 size={12} strokeWidth={1.6} className="animate-spin" />
-                  Saving
-                </span>
-              ) : (
-                "Save settings"
-              )}
-            </Button>
-          </div>
-        </div>
           {/* DATA */}
           <div ref={(el) => { sectionRefs.current.data = el; }} id="data" className="scroll-mt-[var(--space-8)]">
             <Section eyebrow="Data" title="Import / Export">
@@ -581,6 +549,38 @@ export function Settings() {
           </div>
         </div>
       </div>
+
+      {/* Sticky save bar */}
+      <div
+        aria-hidden={!dirty}
+        className={`fixed bottom-0 left-[56px] right-0 pointer-events-none transition-opacity duration-200 ${
+          dirty ? "opacity-100" : "opacity-0"
+        }`}
+        style={{ zIndex: 40 }}
+      >
+        <div
+          className="pointer-events-auto mx-auto max-w-[1080px] px-[var(--space-6)] sm:px-[var(--space-10)] pb-[var(--space-5)]"
+          style={dirty ? { animation: "save-bar-in 220ms var(--ease-out-quart)" } : undefined}
+        >
+          <div className="flex items-center justify-between gap-[var(--space-4)] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--bg-elevated)] px-[var(--space-5)] py-[var(--space-3)] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+            <div className="flex items-center gap-[var(--space-3)]">
+              <span className="block w-[6px] h-[6px] rounded-full" style={{ background: "var(--accent)" }} />
+              <span className="text-[12px] text-[var(--text-secondary)]">Unsaved changes.</span>
+            </div>
+            <Button onClick={handleSave} disabled={saving} variant="default">
+              {saving ? (
+                <span className="inline-flex items-center gap-[6px]">
+                  <Loader2 size={12} strokeWidth={1.6} className="animate-spin" />
+                  Saving
+                </span>
+              ) : (
+                "Save settings"
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
