@@ -13,7 +13,6 @@ import { Dashboard } from "../pages/Dashboard";
 import { History } from "../pages/History";
 import { Stats } from "../pages/Stats";
 import { Vocabulary } from "../pages/Vocabulary";
-import { AiPolish } from "../pages/AiPolish";
 import { Models } from "../pages/Models";
 import { Settings } from "../pages/Settings";
 import { About } from "../pages/About";
@@ -26,7 +25,6 @@ const PAGES: Record<Route, ComponentType> = {
   "/history": History,
   "/stats": Stats,
   "/vocabulary": Vocabulary,
-  "/ai-polish": AiPolish,
   "/models": Models,
   "/settings": Settings,
   "/about": About,
@@ -38,7 +36,6 @@ const CONTAINER_WIDTH: Record<Route, string> = {
   "/history": "max-w-[880px]",
   "/stats": "max-w-[880px]",
   "/vocabulary": "max-w-[880px]",
-  "/ai-polish": "max-w-[680px]",
   "/models": "max-w-[720px]",
   "/settings": "max-w-[1080px]",
   "/about": "max-w-[640px]",
@@ -77,8 +74,30 @@ export function AppLayout() {
     };
   }, []);
 
-  const Page = PAGES[route] ?? Dashboard;
-  const widthClass = CONTAINER_WIDTH[route] ?? "max-w-[880px]";
+  const { settings } = useSettingsStore();
+  const onboarding = !settings.onboardingComplete;
+  const effectiveRoute = onboarding ? "/onboarding" : route;
+
+  const Page = PAGES[effectiveRoute] ?? Dashboard;
+  const widthClass = CONTAINER_WIDTH[effectiveRoute] ?? "max-w-[880px]";
+
+  if (onboarding) {
+    return (
+      <div className="flex flex-col h-screen overflow-hidden bg-[var(--bg-base)]">
+        <TitleBar />
+        <main className="flex-1 overflow-y-auto">
+          <div
+            className={`mx-auto px-[var(--space-6)] sm:px-[var(--space-10)] py-[var(--space-10)] ${widthClass}`}
+            key="onboarding"
+            style={{ animation: "fade-up 240ms var(--ease-out-quart)" }}
+          >
+            <Page />
+          </div>
+        </main>
+        <ToastContainer />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[var(--bg-base)]">

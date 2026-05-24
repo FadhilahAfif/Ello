@@ -5,7 +5,6 @@ export const ROUTES = [
   "/history",
   "/stats",
   "/vocabulary",
-  "/ai-polish",
   "/models",
   "/settings",
   "/about",

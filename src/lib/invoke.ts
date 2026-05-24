@@ -77,6 +77,21 @@ export const historyExport = (ids: number[], format: string) =>
   invoke<string>("history_export", { ids, format });
 export const statsSummary = (range: number) => invoke<StatsSummary>("stats_summary", { range });
 export const polishTest = (text: string) => invoke<string>("polish_test", { text });
-
 export const setOverlayGeometry = (style: OverlayStyle, position: OverlayPosition) =>
   invoke<void>("set_overlay_geometry", { style, position });
+
+export const recordMicTest = () => invoke<string>("record_mic_test");
+
+export const exportConfig = (includeApiKey: boolean) =>
+  invoke<string>("export_config", { includeApiKey });
+export const importConfig = (json: string) =>
+  invoke<ImportPreview>("import_config", { json });
+export const applyImport = (json: string) =>
+  invoke<void>("apply_import", { json });
+
+export interface ImportPreview {
+  schemaVersion: number;
+  settings: AppSettings;
+  vocabulary: VocabularyRule[];
+  raw: string;
+}

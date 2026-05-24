@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSettingsStore } from "../store/settings";
-import { saveSettings, setOverlayGeometry } from "../lib/invoke";
+import { saveSettings, setOverlayGeometry, exportConfig, importConfig, applyImport, getSettings } from "../lib/invoke";
 import type { OverlayStyle, OverlayColor, OverlayPosition } from "../store/settings";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
@@ -8,7 +8,11 @@ import { Select } from "../components/ui/Select";
 import { Switch } from "../components/ui/Switch";
 import { HotkeyCapture } from "../components/HotkeyCapture";
 import { Section } from "../components/Section";
-import { CheckCircle2, Loader2, ArrowUpRight } from "lucide-react";
+import { toast } from "../components/ui/Toast";
+import { CheckCircle2, Loader2, ArrowUpRight, RotateCcw, Download, Upload } from "lucide-react";
+import { navigate } from "../app/router";
+import { save, open } from "@tauri-apps/plugin-dialog";
+import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 
 const CLOUD_MODELS = [
   "whisper-large-v3-turbo",
@@ -23,6 +27,7 @@ const NAV_SECTIONS = [
   { id: "behavior", label: "Behavior" },
   { id: "polish", label: "AI Polish" },
   { id: "overlay", label: "Overlay" },
+  { id: "data", label: "Data" },
 ] as const;
 
 type NavId = typeof NAV_SECTIONS[number]["id"];
@@ -30,6 +35,9 @@ type NavId = typeof NAV_SECTIONS[number]["id"];
 export function Settings() {
   const { settings, devices, dirty, error, patchSetting, setSettings, setError } = useSettingsStore();
   const [saving, setSaving] = useState(false);
+  const [includeApiKey, setIncludeApiKey] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [activeNav, setActiveNav] = useState<NavId>("mode");
   const sectionRefs = useRef<Record<NavId, HTMLElement | null>>({
     mode: null,
@@ -38,6 +46,7 @@ export function Settings() {
     behavior: null,
     polish: null,
     overlay: null,
+    data: null,
   });
 
   // Scroll-spy: highlight the in-page nav based on which section is most visible.
@@ -54,6 +63,52 @@ export function Settings() {
     Object.values(sectionRefs.current).forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
   }, []);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const json = await exportConfig(includeApiKey);
+      const path = await save({
+        defaultPath: "ello-config.elloconfig",
+        filters: [{ name: "Ello Config", extensions: ["elloconfig"] }],
+      });
+      if (path) {
+        await writeTextFile(path, json);
+        toast("Config exported.", "info");
+      }
+    } catch (e) {
+      toast(String(e), "error");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleImport = async () => {
+    setImporting(true);
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [{ name: "Ello Config", extensions: ["elloconfig"] }],
+      });
+      if (!selected) { setImporting(false); return; }
+      const path = typeof selected === "string" ? selected : selected[0];
+      const json = await readTextFile(path);
+      const preview = await importConfig(json);
+      const confirmed = window.confirm(
+        `Import config v${preview.schemaVersion}?\n\nThis will overwrite your current settings and ${preview.vocabulary.length} vocabulary rule(s).`
+      );
+      if (confirmed) {
+        await applyImport(preview.raw);
+        const fresh = await getSettings();
+        setSettings(fresh);
+        toast("Config imported.", "info");
+      }
+    } catch (e) {
+      toast(String(e), "error");
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -314,6 +369,30 @@ export function Settings() {
             </Section>
           </div>
 
+          {/* ONBOARDING */}
+          <div className="scroll-mt-[var(--space-8)]">
+            <Section eyebrow="Setup" title="Onboarding" flush>
+              <Row
+                label="Run onboarding again"
+                desc="Reset the first-run wizard and walk through setup from the beginning."
+              >
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={async () => {
+                    patchSetting("onboardingComplete", false);
+                    const next = { ...settings, onboardingComplete: false };
+                    try { await saveSettings(next); } catch {}
+                    navigate("/onboarding");
+                  }}
+                >
+                  <RotateCcw size={12} strokeWidth={1.6} className="mr-[6px]" />
+                  Run again
+                </Button>
+              </Row>
+            </Section>
+          </div>
+
           {/* OVERLAY */}
           <div ref={(el) => { sectionRefs.current.overlay = el; }} id="overlay" className="scroll-mt-[var(--space-8)]">
             <Section eyebrow="Overlay" title="Recording indicator">
@@ -443,8 +522,65 @@ export function Settings() {
             </Button>
           </div>
         </div>
+          {/* DATA */}
+          <div ref={(el) => { sectionRefs.current.data = el; }} id="data" className="scroll-mt-[var(--space-8)]">
+            <Section eyebrow="Data" title="Import / Export">
+              <div className="flex flex-col gap-[var(--space-5)]">
+                <Row
+                  label="Export config"
+                  desc="Save settings and vocabulary to a .elloconfig file."
+                >
+                  <div className="flex flex-col items-end gap-[var(--space-2)]">
+                    <Button size="sm" variant="ghost" onClick={handleExport} disabled={exporting}>
+                      {exporting ? (
+                        <span className="inline-flex items-center gap-[6px]">
+                          <Loader2 size={12} strokeWidth={1.6} className="animate-spin" />
+                          Exporting
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-[6px]">
+                          <Download size={12} strokeWidth={1.6} />
+                          Export
+                        </span>
+                      )}
+                    </Button>
+                    <label className="inline-flex items-center gap-[var(--space-2)] text-[11px] text-[var(--text-tertiary)] cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={includeApiKey}
+                        onChange={(e) => setIncludeApiKey(e.target.checked)}
+                        className="accent-[var(--accent)]"
+                      />
+                      Include API key
+                      {includeApiKey && (
+                        <span className="text-[var(--color-warning,#e8a020)]">— key will be in plaintext</span>
+                      )}
+                    </label>
+                  </div>
+                </Row>
+                <Row
+                  label="Import config"
+                  desc="Restore settings and vocabulary from a .elloconfig file."
+                >
+                  <Button size="sm" variant="ghost" onClick={handleImport} disabled={importing}>
+                    {importing ? (
+                      <span className="inline-flex items-center gap-[6px]">
+                        <Loader2 size={12} strokeWidth={1.6} className="animate-spin" />
+                        Importing
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-[6px]">
+                        <Upload size={12} strokeWidth={1.6} />
+                        Import
+                      </span>
+                    )}
+                  </Button>
+                </Row>
+              </div>
+            </Section>
+          </div>
+        </div>
       </div>
-    </div>
   );
 }
 

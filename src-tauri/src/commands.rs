@@ -2,6 +2,7 @@ use crate::audio::{enumerate_devices, AudioSource, MicSource, MAX_RECORDING_SECS
 use crate::errors::{AppError, Result};
 use crate::output::{FallbackSink, OutputSink};
 use crate::settings::SettingsManager;
+use hound;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -67,7 +68,10 @@ pub fn save_settings(app: AppHandle, settings: crate::settings::AppSettings) -> 
         .map_err(|e| AppError::Settings(e.to_string()))?;
 
     if let Err(e) = set_overlay_geometry(app, settings.overlay.style, settings.overlay.position) {
-        tracing::warn!("Failed to apply overlay geometry after settings save: {}", e);
+        tracing::warn!(
+            "Failed to apply overlay geometry after settings save: {}",
+            e
+        );
     }
 
     Ok(())
@@ -266,32 +270,7 @@ fn run_recording_pipeline(
         }
     };
 
-    // Step 2: Optionally apply AI polish (soft-fail — never blocks output)
-    let text = {
-        let should_polish = settings.ai_polish.enabled
-            && settings.groq_api_key.is_some()
-            && text.split_whitespace().count() >= settings.ai_polish.min_word_count as usize;
-        if should_polish {
-            let api_key = settings.groq_api_key.as_deref().unwrap_or("");
-            match crate::polish::run(&text, &settings.ai_polish, api_key) {
-                Ok(polished) => polished,
-                Err(e) => {
-                    tracing::warn!("AI polish failed, using raw transcript: {}", e);
-                    if let Err(emit_err) = app.emit(
-                        "polish-failed",
-                        serde_json::json!({ "reason": e.to_string() }),
-                    ) {
-                        tracing::warn!("Failed to emit polish-failed: {}", emit_err);
-                    }
-                    text
-                }
-            }
-        } else {
-            text
-        }
-    };
-
-    // Step 3: Persist transcript + stats when history is enabled
+    // Step 2: Persist transcript + stats when history is enabled
     if settings.history_enabled {
         match db_state.lock() {
             Ok(conn) => {
@@ -339,4 +318,65 @@ pub fn stop_recording(state: State<RecordingState>) -> Result<()> {
     }
     state.should_stop.store(true, Ordering::SeqCst);
     Ok(())
+}
+
+#[tauri::command]
+pub fn record_mic_test(app: AppHandle, state: State<RecordingState>) -> Result<String> {
+    if state
+        .is_recording
+        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+        .is_err()
+    {
+        return Err(crate::errors::AppError::Audio(
+            "Already recording".to_string(),
+        ));
+    }
+    state.should_stop.store(false, Ordering::SeqCst);
+
+    let settings = SettingsManager::new(app.clone()).get_settings()?;
+    let should_stop = Arc::clone(&state.should_stop);
+    let is_recording = Arc::clone(&state.is_recording);
+
+    if let Err(e) = app.emit("recording-started", ()) {
+        tracing::warn!("Failed to emit recording-started: {}", e);
+    }
+
+    let mut source =
+        crate::audio::MicSource::new_chunked(settings.mic_device_id.clone(), should_stop)
+            .with_app_handle(app.clone());
+
+    let pcm = source.record(5);
+    is_recording.store(false, Ordering::SeqCst);
+
+    if let Err(e) = app.emit("recording-stopped", ()) {
+        tracing::warn!("Failed to emit recording-stopped: {}", e);
+    }
+
+    let pcm = pcm?;
+
+    let tmp_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| crate::errors::AppError::Audio(e.to_string()))?;
+    std::fs::create_dir_all(&tmp_dir).map_err(|e| crate::errors::AppError::Audio(e.to_string()))?;
+    let wav_path = tmp_dir.join("mic_test.wav");
+
+    let spec = hound::WavSpec {
+        channels: 1,
+        sample_rate: crate::audio::TARGET_SAMPLE_RATE,
+        bits_per_sample: 32,
+        sample_format: hound::SampleFormat::Float,
+    };
+    let mut writer = hound::WavWriter::create(&wav_path, spec)
+        .map_err(|e| crate::errors::AppError::Audio(e.to_string()))?;
+    for sample in &pcm {
+        writer
+            .write_sample(*sample)
+            .map_err(|e| crate::errors::AppError::Audio(e.to_string()))?;
+    }
+    writer
+        .finalize()
+        .map_err(|e| crate::errors::AppError::Audio(e.to_string()))?;
+
+    Ok(wav_path.to_string_lossy().into_owned())
 }
