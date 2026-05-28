@@ -40,8 +40,9 @@ minutes; subsequent runs use the cargo cache and finish in seconds.
 3. Branch from `main` with a descriptive name (`feature/...`, `fix/...`,
    `docs/...`, `chore/...`).
 4. Keep one logical change per branch when practical.
-5. Update `CHANGELOG.md` under the `[Unreleased]` section as you go so the
-   next release notes write themselves.
+5. If the change is user-facing (new feature, behavior change, fix users
+   will notice), add a bullet under `[Unreleased]` in `CHANGELOG.md`.
+   Internal refactors, test-only changes, and CI tweaks don't need an entry.
 
 ## Running Tests
 
