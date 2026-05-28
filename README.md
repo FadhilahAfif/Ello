@@ -13,11 +13,6 @@ A Windows-first dictation app that records from a global hotkey, transcribes
 locally with Whisper or remotely with Groq, then types the result into the
 active window.
 
-> **Screenshots:** `docs/screenshots/dashboard.png` *(placeholder — add before
-> first public release)*
->
-> **Demo:** `docs/screenshots/demo.gif` *(placeholder)*
-
 ## Features
 
 - **Global hotkey dictation** — toggle or push-to-talk, anywhere in Windows.
