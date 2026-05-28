@@ -23,7 +23,7 @@ for the convention.
 ## Working Rules
 - Use Context7 (or equivalent) for library docs before relying on memory.
 - Keep changes minimal and local to the requested scope.
-- Use `todowrite` (or your agent's equivalent) for any task with 3+ steps.
+- Use a task list (your agent's todo / checklist tool) for any task with 3+ steps.
 - Do not create commits unless explicitly asked.
 - No destructive git commands (`reset --hard`, `checkout --`) without
   permission.

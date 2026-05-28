@@ -103,10 +103,10 @@ To report a security issue, see [SECURITY.md](SECURITY.md).
 
 ## Project status
 
-Ello is currently in v1 release prep (see
-[`.sisyphus/plans/ello-dictation.md`](.sisyphus/plans/ello-dictation.md) for
-the full roadmap). Windows is the only supported platform for v1; macOS and
-Linux are post-v1.
+Ello has not yet had a public release. The `main` branch is the v1 release
+candidate; tracked work and verification before tagging `v1.0.0` lives in
+[`CHANGELOG.md`](CHANGELOG.md) under the `[Unreleased]` section. Windows is
+the only supported platform for v1; macOS and Linux are post-v1.
 
 ## License
 

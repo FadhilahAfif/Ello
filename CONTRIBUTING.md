@@ -34,16 +34,15 @@ minutes; subsequent runs use the cargo cache and finish in seconds.
 
 ## Development Workflow
 
-1. Read [`.sisyphus/plans/ello-dictation.md`](.sisyphus/plans/ello-dictation.md)
-   to understand the current roadmap and the phase any change belongs to.
-2. Read [`.sisyphus/notepads/ello-dictation/learnings.md`](.sisyphus/notepads/ello-dictation/learnings.md)
-   before touching backend or UI code; it captures non-obvious gotchas
-   discovered during earlier phases.
+1. Read this file and `AGENTS.md` for project conventions.
+2. Skim recent commits and the `CHANGELOG.md` to understand the current
+   direction.
 3. Branch from `main` with a descriptive name (`feature/...`, `fix/...`,
    `docs/...`, `chore/...`).
 4. Keep one logical change per branch when practical.
-5. Update plans and learnings as you go: tick checklist items in the plan,
-   append durable facts to the learnings file.
+5. If the change is user-facing (new feature, behavior change, fix users
+   will notice), add a bullet under `[Unreleased]` in `CHANGELOG.md`.
+   Internal refactors, test-only changes, and CI tweaks don't need an entry.
 
 ## Running Tests
 

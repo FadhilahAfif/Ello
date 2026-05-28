@@ -35,6 +35,5 @@
 - [ ] No API keys, audio, or transcript contents are logged or committed.
 - [ ] `src-tauri/capabilities/default.json` is updated if any new commands or
       plugins were added.
-- [ ] `.sisyphus/plans/ello-dictation.md` is updated if scope changed.
-- [ ] Relevant docs (`README.md`, `CONTRIBUTING.md`, `PRIVACY.md`,
-      `CHANGELOG.md`) are updated.
+- [ ] `CHANGELOG.md` is updated under `[Unreleased]` if user-facing behavior changed.
+- [ ] Relevant docs (`README.md`, `CONTRIBUTING.md`, `PRIVACY.md`) are updated.
