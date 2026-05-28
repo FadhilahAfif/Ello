@@ -1,0 +1,75 @@
+name: Bug report
+description: Report a problem with Ello
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Before submitting,
+        please search [existing issues](https://github.com/FadhilahAfif/Ello/issues)
+        to make sure this hasn't already been reported.
+
+        **Do not include your Groq API key, raw audio, or transcript contents
+        in this report.**
+  - type: input
+    id: ello-version
+    attributes:
+      label: Ello version
+      description: Visible in About → Version, or in `package.json`.
+      placeholder: e.g. 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: windows-version
+    attributes:
+      label: Windows version
+      description: e.g. Windows 11 23H2.
+      placeholder: e.g. Windows 11 23H2 (Build 22631)
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      description: Which transcription backend were you using?
+      options:
+        - Cloud (Groq)
+        - Local (Whisper)
+        - Both / unsure
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug. What did you expect to happen, and what actually happened?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps that reliably trigger the bug.
+      placeholder: |
+        1. Open Ello
+        2. Press the global hotkey
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: |
+        Logs from `%APPDATA%\com.ello.dictation\logs\` (the most recent file).
+        Redact anything sensitive before pasting.
+      render: shell
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have searched existing issues for duplicates.
+          required: true
+        - label: I have removed any API keys, audio, or transcript contents from this report.
+          required: true
