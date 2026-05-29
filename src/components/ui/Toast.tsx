@@ -53,7 +53,7 @@ export function ToastContainer() {
           <button
             onClick={() => dismiss(t.id)}
             aria-label="Dismiss notification"
-            className="shrink-0 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors leading-none"
+            className="shrink-0 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-raised)] rounded-[var(--radius-sm)]"
           >
             ×
           </button>

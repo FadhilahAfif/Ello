@@ -114,7 +114,7 @@ function LinkRow({ href, label }: { href: string; label: string }) {
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="group flex items-center justify-between py-[var(--space-3)] border-b border-[var(--border-hairline)] last:border-b-0 transition-colors duration-150 hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:text-[var(--text-primary)]"
+      className="group flex items-center justify-between py-[var(--space-3)] border-b border-[var(--border-hairline)] last:border-b-0 transition-colors duration-150 hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-base)] rounded-[var(--radius-sm)]"
     >
       <span className="text-[12px] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]">
         {label}

@@ -239,7 +239,7 @@ export function AiPolish() {
                   readOnly
                   rows={5}
                   aria-label="Raw transcript"
-                  className="w-full bg-[var(--bg-sunken)] border border-[var(--border-hairline)] rounded-[var(--radius-md)] px-[var(--space-3)] py-[var(--space-2)] text-[13px] text-[var(--text-secondary)] outline-none resize-none font-[var(--font-mono)] cursor-default"
+                  className="w-full bg-[var(--bg-sunken)] border border-[var(--border-hairline)] rounded-[var(--radius-md)] px-[var(--space-3)] py-[var(--space-2)] text-[13px] text-[var(--text-secondary)] outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)] focus-visible:border-[var(--accent)] resize-none font-[var(--font-mono)] cursor-default"
                 />
               </div>
               <div className="flex flex-col gap-[var(--space-2)]">
@@ -251,7 +251,7 @@ export function AiPolish() {
                   readOnly
                   rows={5}
                   aria-label="Polished transcript"
-                  className="w-full bg-[var(--bg-sunken)] border border-[var(--border-hairline)] rounded-[var(--radius-md)] px-[var(--space-3)] py-[var(--space-2)] text-[13px] text-[var(--text-secondary)] outline-none resize-none font-[var(--font-mono)] cursor-default"
+                  className="w-full bg-[var(--bg-sunken)] border border-[var(--border-hairline)] rounded-[var(--radius-md)] px-[var(--space-3)] py-[var(--space-2)] text-[13px] text-[var(--text-secondary)] outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)] focus-visible:border-[var(--accent)] resize-none font-[var(--font-mono)] cursor-default"
                 />
               </div>
             </div>
@@ -262,6 +262,7 @@ export function AiPolish() {
       {/* Sticky save bar */}
       <div
         aria-hidden={!dirty}
+        inert={!dirty}
         className={`fixed bottom-0 left-[56px] right-0 pointer-events-none transition-opacity duration-200 ${
           dirty ? "opacity-100" : "opacity-0"
         }`}

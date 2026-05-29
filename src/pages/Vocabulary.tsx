@@ -192,8 +192,11 @@ function RuleRow({ rule, onSave, onDelete }: RuleRowProps) {
 
   return (
     <tr
-      className="border-b border-[var(--border-hairline)] hover:bg-[var(--bg-elevated)] cursor-pointer group transition-colors"
+      className="border-b border-[var(--border-hairline)] hover:bg-[var(--bg-elevated)] cursor-pointer group transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--accent)]"
+      tabIndex={0}
+      aria-label={`Edit rule: ${rule.term} → ${rule.replacement}`}
       onClick={() => setEditing(true)}
+      onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) { e.preventDefault(); setEditing(true); } }}
     >
       <td className="px-[var(--space-3)] py-[var(--space-3)] font-[var(--font-mono)] text-[12px] text-[var(--text-primary)]">{rule.term}</td>
       <td className="px-[var(--space-3)] py-[var(--space-3)] font-[var(--font-mono)] text-[12px] text-[var(--text-secondary)]">{rule.replacement}</td>
@@ -408,10 +411,11 @@ export function Vocabulary() {
       <Section eyebrow="Preview" title="Live preview">
         <div className="grid grid-cols-2 gap-[var(--space-4)]">
           <div className="flex flex-col gap-[var(--space-2)]">
-            <label className="text-[11px] text-[var(--text-tertiary)] font-[var(--font-mono)] uppercase tracking-[0.12em]">
+            <label htmlFor="vocab-preview-input" className="text-[11px] text-[var(--text-tertiary)] font-[var(--font-mono)] uppercase tracking-[0.12em]">
               Input
             </label>
             <textarea
+              id="vocab-preview-input"
               value={previewInput}
               onChange={(e) => setPreviewInput(e.target.value)}
               placeholder="Type something to preview your rules…"
@@ -420,15 +424,16 @@ export function Vocabulary() {
             />
           </div>
           <div className="flex flex-col gap-[var(--space-2)]">
-            <label className="text-[11px] text-[var(--text-tertiary)] font-[var(--font-mono)] uppercase tracking-[0.12em]">
+            <label htmlFor="vocab-preview-output" className="text-[11px] text-[var(--text-tertiary)] font-[var(--font-mono)] uppercase tracking-[0.12em]">
               Output
             </label>
             <textarea
+              id="vocab-preview-output"
               value={previewOutput}
               readOnly
               rows={5}
               aria-label="Preview output after rules applied"
-              className="w-full bg-[var(--bg-sunken)] border border-[var(--border-hairline)] rounded-[var(--radius-md)] px-[var(--space-3)] py-[var(--space-2)] text-[13px] text-[var(--text-secondary)] outline-none resize-none font-[var(--font-mono)] cursor-default"
+              className="w-full bg-[var(--bg-sunken)] border border-[var(--border-hairline)] rounded-[var(--radius-md)] px-[var(--space-3)] py-[var(--space-2)] text-[13px] text-[var(--text-secondary)] outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)] focus-visible:border-[var(--accent)] resize-none font-[var(--font-mono)] cursor-default"
             />
           </div>
         </div>

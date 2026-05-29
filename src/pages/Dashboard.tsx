@@ -311,7 +311,7 @@ function QuickLink({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="group inline-flex items-center gap-[6px] text-[12px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors duration-150 focus-visible:outline-none focus-visible:text-[var(--text-primary)]"
+      className="group inline-flex items-center gap-[6px] text-[12px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-base)] rounded-[var(--radius-sm)]"
     >
       <span>{label}</span>
       <ArrowUpRight size={12} strokeWidth={1.6} className="transition-transform duration-150 group-hover:translate-x-[1px] group-hover:-translate-y-[1px]" aria-hidden="true" />
