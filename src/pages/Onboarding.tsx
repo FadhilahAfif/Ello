@@ -205,8 +205,9 @@ function StepApiKey({ onNext }: { onNext: (patches: Record<string, unknown>) => 
       </div>
       <div className="flex flex-col gap-[var(--space-5)]">
         <div className="flex flex-col gap-[var(--space-2)]">
-          <label className="text-[12px] text-[var(--text-primary)]">API key</label>
+          <label htmlFor="onboarding-api-key" className="text-[12px] text-[var(--text-primary)]">API key</label>
           <Input
+            id="onboarding-api-key"
             type="password"
             autoComplete="off"
             placeholder="gsk_..."
@@ -216,8 +217,9 @@ function StepApiKey({ onNext }: { onNext: (patches: Record<string, unknown>) => 
           <span className="text-[10px] text-[var(--text-tertiary)] font-[var(--font-mono)]">Get a free key at console.groq.com</span>
         </div>
         <div className="flex flex-col gap-[var(--space-2)]">
-          <label className="text-[12px] text-[var(--text-primary)]">Model</label>
+          <label htmlFor="onboarding-cloud-model" className="text-[12px] text-[var(--text-primary)]">Model</label>
           <select
+            id="onboarding-cloud-model"
             value={model}
             onChange={(e) => setModel(e.target.value)}
             className="bg-[var(--bg-raised)] border border-[var(--border)] rounded-[var(--radius-md)] px-[var(--space-3)] py-[var(--space-2)] text-[12px] text-[var(--text-primary)] focus-visible:outline-none focus-visible:border-[var(--accent)] focus-visible:ring-1 focus-visible:ring-[var(--accent)]"

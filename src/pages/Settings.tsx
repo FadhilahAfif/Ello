@@ -214,7 +214,7 @@ export function Settings() {
                 <button
                   key={id}
                   onClick={() => scrollTo(id)}
-                  className={`shrink-0 text-[12px] py-[6px] px-[var(--space-3)] rounded-[var(--radius-md)] border transition-colors duration-150 ${
+                  className={`shrink-0 text-[12px] py-[6px] px-[var(--space-3)] rounded-[var(--radius-md)] border transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-base)] ${
                     active
                       ? "text-[var(--text-primary)] bg-[var(--bg-raised)] border-[var(--border)]"
                       : "text-[var(--text-tertiary)] border-[var(--border-hairline)]"
@@ -249,6 +249,7 @@ export function Settings() {
                     <PrivacyNote />
                     <Field label="Model" hint="whisper-large-v3-turbo recommended for speed">
                       <Select
+                        aria-label="Cloud model"
                         value={settings.cloudModel}
                         onChange={(e) => patchSetting("cloudModel", e.target.value)}
                       >
@@ -259,6 +260,7 @@ export function Settings() {
                     </Field>
                     <Field label="Groq API key" hint="Stored locally in your app data">
                       <Input
+                        aria-label="Groq API key"
                         type="password"
                         autoComplete="off"
                         placeholder="gsk_..."
@@ -275,7 +277,7 @@ export function Settings() {
                       Manage local Whisper models on the{" "}
                       <button
                         onClick={() => (window.location.hash = "/models")}
-                        className="text-[var(--accent)] hover:underline focus-visible:outline-none focus-visible:underline"
+                        className="text-[var(--accent)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-base)] rounded-[var(--radius-sm)]"
                       >
                         Models
                       </button>{" "}
@@ -297,6 +299,7 @@ export function Settings() {
             <Section eyebrow="Audio" title="Microphone input">
               <Field label="Microphone" hint="Default uses Windows' currently selected device">
                 <Select
+                  aria-label="Microphone"
                   value={settings.micDeviceId ?? "default"}
                   onChange={(e) =>
                     patchSetting("micDeviceId", e.target.value === "default" ? null : e.target.value)
@@ -553,6 +556,7 @@ export function Settings() {
       {/* Sticky save bar */}
       <div
         aria-hidden={!dirty}
+        inert={!dirty}
         className={`fixed bottom-0 left-[56px] right-0 pointer-events-none transition-opacity duration-200 ${
           dirty ? "opacity-100" : "opacity-0"
         }`}

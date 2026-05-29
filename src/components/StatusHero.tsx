@@ -51,6 +51,8 @@ export function StatusHero() {
       {/* Headline */}
       <div className="px-[var(--space-6)] pt-[var(--space-6)] pb-[var(--space-3)]">
         <h1
+          aria-live="polite"
+          aria-atomic="true"
           className="flex items-baseline"
           style={{
             fontFamily: "var(--font-sans)",

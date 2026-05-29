@@ -315,7 +315,7 @@ function HistoryRow({
         checked={selected}
         onChange={onToggleSelect}
         aria-label={`Select transcript from ${item.createdAt}`}
-        className="mt-[3px] shrink-0 accent-[var(--accent)] w-[13px] h-[13px] cursor-pointer"
+        className="mt-[3px] shrink-0 accent-[var(--accent)] w-[13px] h-[13px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-base)] rounded-[var(--radius-sm)]"
       />
       <div className="flex-1 min-w-0 flex flex-col gap-[var(--space-1)]">
         <p
