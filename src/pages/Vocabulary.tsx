@@ -196,7 +196,7 @@ function RuleRow({ rule, onSave, onDelete }: RuleRowProps) {
       tabIndex={0}
       aria-label={`Edit rule: ${rule.term} → ${rule.replacement}`}
       onClick={() => setEditing(true)}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditing(true); } }}
+      onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) { e.preventDefault(); setEditing(true); } }}
     >
       <td className="px-[var(--space-3)] py-[var(--space-3)] font-[var(--font-mono)] text-[12px] text-[var(--text-primary)]">{rule.term}</td>
       <td className="px-[var(--space-3)] py-[var(--space-3)] font-[var(--font-mono)] text-[12px] text-[var(--text-secondary)]">{rule.replacement}</td>
