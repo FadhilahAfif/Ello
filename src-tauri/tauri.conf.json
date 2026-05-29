@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Ello",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "identifier": "com.ello.dictation",
   "build": {
     "beforeDevCommand": "npm run dev",
