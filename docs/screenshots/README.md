@@ -2,7 +2,7 @@
 
 Place README assets here. Tracked by git so they render on GitHub.
 
-Suggested filenames (referenced from `README.md`):
+Suggested filenames:
 
 - `dashboard.png` — main dashboard with status hero, today's stats, recent transcripts.
 - `demo.gif` — short loop showing hotkey → transcribe → typing into active window.

@@ -8,9 +8,8 @@ attacks, and discriminatory language are not tolerated.
 
 ## Reporting
 
-Report incidents to the maintainer at the email address listed in
-[SECURITY.md](SECURITY.md). Reports are handled confidentially. Maintainers
-may warn, temporarily ban, or permanently ban contributors whose behavior
-violates this code.
+Report incidents privately through the process in [SECURITY.md](SECURITY.md).
+Reports are handled confidentially. Maintainers may warn, temporarily ban, or
+permanently ban contributors whose behavior violates this code.
 
 The full text of Contributor Covenant v2.1 is available at the link above.
