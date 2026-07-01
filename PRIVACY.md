@@ -10,8 +10,7 @@ the network, and how to wipe everything.
 - **Cloud mode** (Groq): audio is uploaded to Groq for transcription. The
   resulting text comes back and is typed into your active window. The audio
   is not retained by Ello after transcription.
-- Transcript history and usage stats are stored locally in a SQLite
-  database. Both are on by default and can be disabled in Settings.
+- Transcript history and usage stats are stored locally in a SQLite database.
 - Ello does **not** include analytics, telemetry, crash reporting, or any
   third-party tracking.
 
@@ -75,17 +74,12 @@ that audio will be uploaded to Groq. The banner stays visible in the
 Settings page while Cloud mode is active. You can switch back to Local
 mode at any time to stop further uploads.
 
-## Disabling History and Stats
+## History and Stats Retention
 
-In Settings, you can disable:
-
-- **Transcript history** — when off, transcripts are typed into your active
-  window but never written to `ello.db`.
-- **Usage stats** — when off, daily counters (sessions, words, total
-  duration) are not incremented or stored.
-
-These toggles take effect immediately for new recordings; previously
-stored rows are not removed automatically (see "Wiping Data" below).
+In the current v1 UI, successful dictation sessions are stored in local
+history and usage stats. The History page can clear transcript history, and
+the full local database can be deleted to reset stats (see "Wiping Data"
+below).
 
 ## Wiping Data
 

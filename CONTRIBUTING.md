@@ -34,7 +34,7 @@ minutes; subsequent runs use the cargo cache and finish in seconds.
 
 ## Development Workflow
 
-1. Read this file and `AGENTS.md` for project conventions.
+1. Read this file and skim recent repo changes for project conventions.
 2. Skim recent commits and the `CHANGELOG.md` to understand the current
    direction.
 3. Branch from `main` with a descriptive name (`feature/...`, `fix/...`,
@@ -76,9 +76,9 @@ clipboard fallback, transcript history search, vocabulary substitution, and
 - **No comments** in code unless they explain something the code itself
   cannot — non-obvious invariants, link-outs to external docs, or workaround
   rationale.
-- **Frontend:** read [`DESIGN.md`](DESIGN.md) before changing any UI. Use
-  named spacing tokens (`px-[var(--space-N)]`), `lucide-react` icons, and
-  `focus-visible:` rings.
+- **Frontend:** follow the existing UI tokens in `src/index.css` and existing
+  components. Use named spacing tokens (`px-[var(--space-N)]`),
+  `lucide-react` icons, and `focus-visible:` rings.
 - **Privacy:** never log API keys, raw audio, or transcript contents. Errors
   surfaced to the frontend must never include Groq response bodies verbatim.
 - **Capabilities:** update `src-tauri/capabilities/default.json` whenever you

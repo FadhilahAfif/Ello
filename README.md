@@ -13,9 +13,7 @@ A Windows-first dictation app that records from a global hotkey, transcribes
 locally with Whisper or remotely with Groq, then types the result into the
 active window.
 
-> **Screenshots:** [`docs/screenshots/dashboard.png`](docs/screenshots/dashboard.png) *(placeholder — add before first public release)*
->
-> **Demo:** [`docs/screenshots/demo.gif`](docs/screenshots/demo.gif) *(placeholder)*
+![Ello demo](docs/screenshots/demo.gif)
 
 ## Features
 
@@ -36,6 +34,11 @@ active window.
 
 ## Quickstart
 
+Ello has not had a public release yet. Until the first release is tagged, use
+the source build below.
+
+After `v1.0.0` is published:
+
 1. Download the latest installer from the [Releases](https://github.com/FadhilahAfif/Ello/releases/latest) page.
 2. Run the installer and launch Ello. The first-run wizard will guide you through
    picking Cloud or Local mode, setting your API key or downloading a model,
@@ -51,8 +54,7 @@ active window.
   stored locally via `tauri-plugin-store` and is never sent anywhere except
   Groq.
 - Transcript history and usage stats live in a local SQLite database
-  (`ello.db`) in your app data directory. Both are on by default and can be
-  disabled in Settings.
+  (`ello.db`) in your app data directory.
 - See [PRIVACY.md](PRIVACY.md) for the full breakdown of what is stored, what
   is sent over the network, and how to wipe everything.
 
