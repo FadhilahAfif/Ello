@@ -35,9 +35,6 @@ for the convention.
 - TypeScript: strict mode, no comments unless explaining a non-obvious
   invariant. Frontend Tauri calls go through `src/lib/invoke.ts` wrappers,
   not scattered `invoke()`.
-- Frontend: read [`DESIGN.md`](DESIGN.md) before changing UI. Use named
-  spacing tokens (`px-[var(--space-N)]`), `lucide-react` icons (16px stroke
-  1.6), `focus-visible:` rings.
 - Update `src-tauri/capabilities/default.json` whenever a new command or
   plugin is added.
 
