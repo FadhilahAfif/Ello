@@ -50,5 +50,5 @@ jobs:
             See [CHANGELOG.md](https://github.com/FadhilahAfif/Ello/blob/main/CHANGELOG.md) for the full release notes.
           releaseDraft: true
           prerelease: ${{ contains(github.ref_name, '-rc.') || contains(github.ref_name, '-beta.') || contains(github.ref_name, '-alpha.') }}
-          uploadUpdaterJson: true
+          includeUpdaterJson: true
           updaterJsonPreferNsis: true
