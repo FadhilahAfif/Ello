@@ -59,7 +59,10 @@ impl Transcriber for GroqTranscriber {
 
         if !response.status().is_success() {
             let status = response.status();
-            return Err(AppError::Transcription(format!("Groq API error {}", status)));
+            return Err(AppError::Transcription(format!(
+                "Groq API error {}",
+                status
+            )));
         }
 
         let json: serde_json::Value = response
