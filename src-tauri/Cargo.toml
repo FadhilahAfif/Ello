@@ -32,7 +32,7 @@ tauri-plugin-autostart = "2.5.1"
 cpal = "0.15.3"
 rubato = "0.16.1"
 hound = "3.5.1"
-reqwest = { version = "0.12.15", features = ["blocking", "multipart", "json"] }
+reqwest = { version = "0.13.3", features = ["blocking", "multipart", "json"] }
 tokio = { version = "1", features = ["full"] }
 enigo = "0.6.1"
 arboard = "3.6.1"
