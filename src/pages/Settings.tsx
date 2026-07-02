@@ -9,7 +9,7 @@ import { Switch } from "../components/ui/Switch";
 import { HotkeyCapture } from "../components/HotkeyCapture";
 import { Section } from "../components/Section";
 import { toast } from "../components/ui/Toast";
-import { CheckCircle2, Loader2, ArrowUpRight, RotateCcw, Download, Upload } from "lucide-react";
+import { CheckCircle2, Loader2, RotateCcw, Download, Upload } from "lucide-react";
 import { navigate } from "../app/router";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
@@ -25,7 +25,6 @@ const NAV_SECTIONS = [
   { id: "audio", label: "Audio" },
   { id: "hotkey", label: "Hotkey" },
   { id: "behavior", label: "Behavior" },
-  { id: "polish", label: "AI Polish" },
   { id: "overlay", label: "Overlay" },
   { id: "data", label: "Data" },
 ] as const;
@@ -44,7 +43,6 @@ export function Settings() {
     audio: null,
     hotkey: null,
     behavior: null,
-    polish: null,
     overlay: null,
     data: null,
   });
@@ -350,24 +348,6 @@ export function Settings() {
                   onChange={(v) => patchSetting("autostartEnabled", v)}
                   label="Start with Windows"
                 />
-              </Row>
-            </Section>
-          </div>
-
-          {/* AI POLISH */}
-          <div ref={(el) => { sectionRefs.current.polish = el; }} id="polish" className="scroll-mt-[var(--space-8)]">
-            <Section eyebrow="Polish" title="AI cleanup">
-              <Row
-                label="AI Polish"
-                desc="Remove filler words, fix grammar, or reformat transcripts with an LLM."
-              >
-                <button
-                  onClick={() => (window.location.hash = "/ai-polish")}
-                  className="group inline-flex items-center gap-[6px] text-[12px] text-[var(--accent)] hover:text-[var(--text-primary)] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] rounded"
-                >
-                  Configure
-                  <ArrowUpRight size={12} strokeWidth={1.6} className="transition-transform duration-150 group-hover:translate-x-[1px] group-hover:-translate-y-[1px]" />
-                </button>
               </Row>
             </Section>
           </div>

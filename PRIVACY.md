@@ -24,7 +24,7 @@ All Ello data lives under your Windows app data directory:
 
 | File / folder            | Contents                                                                 |
 |--------------------------|--------------------------------------------------------------------------|
-| `settings.json`          | Mode, hotkey, audio device, AI Polish prompt, **Groq API key**, toggles. |
+| `settings.json`          | Mode, hotkey, audio device, **Groq API key**, toggles.                  |
 | `ello.db`                | SQLite DB: transcripts, vocabulary rules, daily usage stats.             |
 | `models/`                | Local Whisper GGML model files (only if you downloaded any).             |
 | `logs/`                  | Daily-rotated log files written by `tracing`.                            |
@@ -46,14 +46,11 @@ Ello makes outbound network requests in only these situations:
    API key. Groq returns the transcript text. See
    [Groq's privacy policy](https://groq.com/privacy-policy/) for what they
    do with submitted audio.
-2. **AI Polish (opt-in)** — if you enable AI Polish in Settings, transcripts
-   above your minimum-word threshold are also sent to
-   `https://api.groq.com/openai/v1/chat/completions` for post-processing.
-3. **Model downloads** — when you download a Whisper model from the in-app
+2. **Model downloads** — when you download a Whisper model from the in-app
    manager, Ello fetches the file from the URL listed in the model
    manifest (typically `huggingface.co`). Only the bytes of the model are
    transferred.
-4. **Update checks** — `tauri-plugin-updater` queries the Ello GitHub
+3. **Update checks** — `tauri-plugin-updater` queries the Ello GitHub
    release manifest at
    `https://github.com/FadhilahAfif/Ello/releases/latest/download/latest.json`
    and downloads signed installer bundles when an update is available.
