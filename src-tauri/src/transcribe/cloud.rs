@@ -59,10 +59,9 @@ impl Transcriber for GroqTranscriber {
 
         if !response.status().is_success() {
             let status = response.status();
-            let body = response.text().unwrap_or_default();
             return Err(AppError::Transcription(format!(
-                "Groq API error {}: {}",
-                status, body
+                "Groq API error {}",
+                status
             )));
         }
 

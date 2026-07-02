@@ -23,8 +23,6 @@ active window.
 - **Active-window typing** with automatic clipboard fallback when typing fails.
 - **Custom vocabulary** — exact, prefix, and contains rules with case-sensitive
   matching, applied to every transcript.
-- **Optional AI polish** — pipe transcripts through a Groq chat model to remove
-  fillers, fix grammar, or reformat.
 - **Transcript history** with FTS5 full-text search, copy, and bulk export to
   txt / json / markdown.
 - **Usage stats** — words, sessions, average WPM, estimated time saved.
@@ -33,11 +31,6 @@ active window.
   auto-updates.
 
 ## Quickstart
-
-Ello has not had a public release yet. Until the first release is tagged, use
-the source build below.
-
-After `v1.0.0` is published:
 
 1. Download the latest installer from the [Releases](https://github.com/FadhilahAfif/Ello/releases/latest) page.
 2. Run the installer and launch Ello. The first-run wizard will guide you through
@@ -105,10 +98,8 @@ To report a security issue, see [SECURITY.md](SECURITY.md).
 
 ## Project status
 
-Ello has not yet had a public release. The `main` branch is the v1 release
-candidate; tracked work and verification before tagging `v1.0.0` lives in
-[`CHANGELOG.md`](CHANGELOG.md) under the `[Unreleased]` section. Windows is
-the only supported platform for v1; macOS and Linux are post-v1.
+Ello is public on GitHub. Windows is the only supported platform for v1;
+macOS and Linux are post-v1.
 
 ## License
 

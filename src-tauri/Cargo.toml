@@ -1,6 +1,6 @@
 [package]
 name = "ello"
-version = "1.0.0"
+version = "1.0.1"
 description = "A Windows-first Tauri dictation app"
 authors = ["Broski"]
 edition = "2021"

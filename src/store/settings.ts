@@ -15,13 +15,6 @@ export interface OverlaySettings {
 }
 export type RecordingStatus = "idle" | "recording" | "transcribing";
 
-export interface AiPolishSettings {
-  enabled: boolean;
-  model: string;
-  prompt: string;
-  minWordCount: number;
-}
-
 export interface ModelInfo {
   id: string;
   name: string;
@@ -50,7 +43,6 @@ export interface AppSettings {
   hotkey: string;
   theme: string;
   accentColor: string;
-  aiPolish: AiPolishSettings;
   historyEnabled: boolean;
   statsEnabled: boolean;
   onboardingComplete: boolean;
@@ -77,12 +69,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   hotkey: "Alt+Shift+D",
   theme: "dark",
   accentColor: "#7c5cff",
-  aiPolish: {
-    enabled: false,
-    model: "llama-3.3-70b-versatile",
-    prompt: "Remove filler words and fix grammar without changing meaning.",
-    minWordCount: 10,
-  },
   historyEnabled: true,
   statsEnabled: true,
   onboardingComplete: false,
