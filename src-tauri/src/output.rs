@@ -19,6 +19,7 @@ pub struct ClipboardSink;
 /// Tries `EnigoTyper` first; falls back to `ClipboardSink` on error.
 pub struct FallbackSink;
 
+#[cfg(any(target_os = "windows", test))]
 fn wait_for_modifiers_to_release(
     mut modifiers_pressed: impl FnMut() -> bool,
     mut wait: impl FnMut(),
