@@ -43,9 +43,10 @@ active window.
 
 - **Local mode** keeps audio and transcripts entirely on your machine.
 - **Cloud mode** uploads audio to Groq for transcription. The first time you
-  enable Cloud mode, Ello shows an explicit upload warning. Your API key is
-  stored locally via `tauri-plugin-store` and is never sent anywhere except
-  Groq.
+  use Cloud mode, Ello requires explicit upload consent. Ello deletes its
+  temporary WAV after the request; Groq may retain inference data for up to 30
+  days unless Zero Data Retention is enabled. Your API key is kept in Windows
+  Credential Manager.
 - Transcript history and usage stats live in a local SQLite database
   (`ello.db`) in your app data directory.
 - See [PRIVACY.md](PRIVACY.md) for the full breakdown of what is stored, what
@@ -59,7 +60,7 @@ end, Rust on the back end.
 ### Prerequisites
 
 - Rust stable
-- Node 20+
+- Node `^20.19.0` or `>=22.12.0`
 - MSVC Build Tools (Visual Studio 2022 or Build Tools for Visual Studio 2022)
 - CMake 3.20+
 - LLVM / libclang (required by `whisper-rs`'s bindgen step)
@@ -77,15 +78,21 @@ npm run tauri build        # release installer (MSI + NSIS)
 ### Tests
 
 ```sh
+cd src-tauri
 cargo fmt --check
 cargo clippy -- -D warnings
 cargo test
+cd ..
 npm run build
 ```
 
-Cloud and local-Whisper integration tests are gated on `GROQ_API_KEY` and
-`WHISPER_MODEL_PATH` respectively, and are skipped when those env vars are
-unset.
+Live integration tests are ignored by default. See [CONTRIBUTING.md](CONTRIBUTING.md)
+for the explicit `--ignored` commands and required environment variables.
+
+The published installer is updater-signed but not currently Authenticode
+publisher-signed, so Windows SmartScreen may warn on first install. Verify the
+installer against `SHA256SUMS.txt` attached to the same release before running
+it.
 
 ## Contributing
 
@@ -103,4 +110,5 @@ macOS and Linux are post-v1.
 
 ## License
 
-[MIT](LICENSE) © 2026 Muhammad Afif Fadhilah.
+[MIT](LICENSE) © 2026 Muhammad Afif Fadhilah. See
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for bundled third-party works.

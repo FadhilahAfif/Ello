@@ -24,15 +24,15 @@ All Ello data lives under your Windows app data directory:
 
 | File / folder            | Contents                                                                 |
 |--------------------------|--------------------------------------------------------------------------|
-| `settings.json`          | Mode, hotkey, audio device, **Groq API key**, toggles.                  |
+| `settings.json`          | Mode, hotkey, audio device, consent state, and other toggles.            |
 | `ello.db`                | SQLite DB: transcripts, vocabulary rules, daily usage stats.             |
 | `models/`                | Local Whisper GGML model files (only if you downloaded any).             |
 | `logs/`                  | Daily-rotated log files written by `tracing`.                            |
 | `mic_test.wav`           | Last 5-second microphone test recording from onboarding.                 |
 
-The Groq API key is stored in plain text inside `settings.json`. Anyone with
-read access to your user profile can read it. Treat it like any other local
-credential.
+The Groq API key is stored as a generic credential in Windows Credential
+Manager, not in `settings.json`. An explicit config export can include the key
+if you opt in.
 
 Logs deliberately exclude raw audio, transcripts, and API keys.
 
@@ -43,9 +43,11 @@ Ello makes outbound network requests in only these situations:
 1. **Cloud mode transcription** — when you finish a recording with mode set
    to "Cloud", Ello uploads the recorded WAV to
    `https://api.groq.com/openai/v1/audio/transcriptions` along with your
-   API key. Groq returns the transcript text. See
-   [Groq's privacy policy](https://groq.com/privacy-policy/) for what they
-   do with submitted audio.
+   API key. Groq returns the transcript text.
+   Ello deletes its temporary WAV after the request completes. Groq may retain
+   inference inputs and outputs for up to 30 days for reliability and abuse
+   monitoring unless Zero Data Retention is enabled for the account. See
+   [Groq's data controls](https://console.groq.com/docs/your-data).
 2. **Model downloads** — when you download a Whisper model from the in-app
    manager, Ello fetches the file from the URL listed in the model
    manifest (typically `huggingface.co`). Only the bytes of the model are
@@ -66,10 +68,18 @@ Ello does **not**:
 
 ## Cloud-Upload Warning
 
-The first time you switch to Cloud mode, Ello shows a banner explaining
-that audio will be uploaded to Groq. The banner stays visible in the
-Settings page while Cloud mode is active. You can switch back to Local
-mode at any time to stop further uploads.
+Cloud transcription is blocked by the backend until you explicitly acknowledge
+the upload and retention disclosure. Importing Cloud settings resets this
+acknowledgment. You can switch to Local mode at any time to stop further
+uploads.
+
+## Clipboard Fallback
+
+If direct typing fails, Ello briefly places the transcript on the Windows
+clipboard, pastes it, and restores the previous text when possible. Clipboard
+History or clipboard cloud sync may still retain that temporary entry. Ello
+cannot restore non-text clipboard formats or remove entries already captured by
+those Windows features.
 
 ## History and Stats Retention
 
@@ -103,7 +113,8 @@ To wipe **everything** Ello has stored:
 To revoke cloud access:
 
 1. Sign in to your Groq account and revoke the API key you used in Ello.
-2. Clear the key in Ello's Settings page (or wipe data as above).
+2. Clear the key in Ello's Settings page. Deleting the app-data folder does not
+   remove a credential from Windows Credential Manager.
 
 ## Imported and Exported Files
 

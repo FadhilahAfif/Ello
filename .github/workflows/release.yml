@@ -12,24 +12,26 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "20"
+          node-version: "20.19.0"
           cache: npm
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable
 
       - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           workspaces: src-tauri
 
       - name: Install LLVM (whisper-rs bindgen)
-        uses: KyleMayes/install-llvm-action@v2
+        uses: KyleMayes/install-llvm-action@ebc0426251bc40c7cd31162802432c68818ab8f0 # v2
         with:
           version: "18"
 
@@ -37,7 +39,7 @@ jobs:
         run: npm ci
 
       - name: Build, sign, and publish installers
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -47,8 +49,22 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "Ello ${{ github.ref_name }}"
           releaseBody: |
-            See [CHANGELOG.md](https://github.com/FadhilahAfif/Ello/blob/main/CHANGELOG.md) for the full release notes.
+            See [CHANGELOG.md](https://github.com/FadhilahAfif/Ello/blob/${{ github.ref_name }}/CHANGELOG.md) for the release notes from this tag.
           releaseDraft: true
           prerelease: ${{ contains(github.ref_name, '-rc.') || contains(github.ref_name, '-beta.') || contains(github.ref_name, '-alpha.') }}
           includeUpdaterJson: true
           updaterJsonPreferNsis: true
+
+      - name: Publish SHA-256 checksums
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $bundle = Resolve-Path src-tauri/target/release/bundle
+          $files = Get-ChildItem $bundle -Recurse -File | Where-Object Extension -In '.exe', '.msi', '.sig', '.zip'
+          $lines = $files | ForEach-Object {
+            $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($_.Name)"
+          }
+          $lines | Set-Content -Encoding ascii SHA256SUMS.txt
+          gh release upload $env:GITHUB_REF_NAME SHA256SUMS.txt --clobber

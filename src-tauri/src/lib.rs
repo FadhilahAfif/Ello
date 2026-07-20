@@ -1,5 +1,6 @@
 pub mod audio;
 pub mod commands;
+pub mod credentials;
 pub mod db;
 pub mod errors;
 pub mod history;
@@ -118,7 +119,10 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             commands::get_settings,
+            commands::get_overlay_settings,
             commands::save_settings,
+            commands::set_groq_api_key,
+            commands::clear_groq_api_key,
             commands::get_devices,
             commands::start_recording,
             commands::stop_recording,

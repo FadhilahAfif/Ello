@@ -100,10 +100,7 @@ mod tests {
     #[ignore = "requires ggml model file"]
     fn local_transcriber_with_fixture() {
         let model = std::env::var("WHISPER_MODEL_PATH").expect("WHISPER_MODEL_PATH not set");
-        let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("tests")
-            .join("fixtures")
-            .join("hello.wav");
+        let fixture = std::env::var("WHISPER_AUDIO_PATH").expect("WHISPER_AUDIO_PATH not set");
 
         let mut src = crate::audio::WavSource::new(&fixture);
         let pcm = src.record(60).unwrap();

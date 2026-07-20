@@ -45,5 +45,5 @@ body:
       options:
         - label: I have searched existing issues and discussions for duplicates.
           required: true
-        - label: This request fits the v1 scope (Windows-only, dark theme, batch transcription). See README.md.
+        - label: This request fits the current Windows desktop dictation scope. See README.md.
           required: false

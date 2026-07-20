@@ -44,6 +44,11 @@ pub fn get_settings(app: AppHandle) -> Result<crate::settings::AppSettings> {
 }
 
 #[tauri::command]
+pub fn get_overlay_settings(app: AppHandle) -> Result<crate::settings::OverlaySettings> {
+    Ok(SettingsManager::new(app).get_settings()?.overlay)
+}
+
+#[tauri::command]
 pub fn save_settings(app: AppHandle, settings: crate::settings::AppSettings) -> Result<()> {
     // Read the old hotkey before overwriting so we can unregister it
     let old_hotkey = SettingsManager::new(app.clone())
@@ -75,6 +80,16 @@ pub fn save_settings(app: AppHandle, settings: crate::settings::AppSettings) -> 
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub fn set_groq_api_key(api_key: String) -> Result<()> {
+    crate::credentials::set(api_key.trim())
+}
+
+#[tauri::command]
+pub fn clear_groq_api_key() -> Result<()> {
+    crate::credentials::clear()
 }
 
 #[tauri::command]
@@ -158,6 +173,13 @@ pub fn get_devices() -> Result<Vec<AudioDevice>> {
 
 /// Called by both the Tauri command and the hotkey handler.
 pub fn trigger_start_recording(app: AppHandle) -> Result<()> {
+    let settings = SettingsManager::new(app.clone()).get_settings()?;
+    if settings.transcription_mode == crate::settings::TranscriptionMode::Cloud {
+        validate_cloud_access(
+            settings.cloud_upload_acknowledged,
+            crate::credentials::get()?.as_deref(),
+        )?;
+    }
     let state = app.state::<RecordingState>();
 
     // Atomically claim the recording slot; bail if already recording.
@@ -174,7 +196,6 @@ pub fn trigger_start_recording(app: AppHandle) -> Result<()> {
     let app_clone = app.clone();
     let is_recording = Arc::clone(&state.is_recording);
     let should_stop = Arc::clone(&state.should_stop);
-    let settings = SettingsManager::new(app.clone()).get_settings()?;
 
     if let Err(e) = app.emit("recording-started", ()) {
         tracing::warn!("Failed to emit recording-started: {}", e);
@@ -218,10 +239,10 @@ fn run_recording_pipeline(
         crate::settings::TranscriptionMode::Cloud => {
             mode_str = "cloud".to_string();
             model_str = settings.cloud_model.clone();
-            let key = settings
-                .groq_api_key
-                .clone()
-                .ok_or_else(|| AppError::Transcription("Groq API key not set".to_string()))?;
+            let key = crate::credentials::get()?;
+            validate_cloud_access(settings.cloud_upload_acknowledged, key.as_deref())?;
+            let key =
+                key.ok_or_else(|| AppError::Transcription("Groq API key not set".to_string()))?;
             let transcriber =
                 crate::transcribe::cloud::GroqTranscriber::new(key, settings.cloud_model);
             crate::transcribe::Transcriber::transcribe(&transcriber, &raw_pcm)?
@@ -296,12 +317,31 @@ fn run_recording_pipeline(
         }
     }
 
-    if let Err(e) = app.emit("transcription-done", serde_json::json!({ "text": text })) {
-        tracing::warn!("Failed to emit transcription-done: {}", e);
+    if let Some(main) = app.get_webview_window("main") {
+        if let Err(e) = main.emit("transcription-done", serde_json::json!({ "text": text })) {
+            tracing::warn!("Failed to emit transcription-done to main window: {}", e);
+        }
+    }
+    if let Some(overlay) = app.get_webview_window("overlay") {
+        if let Err(e) = overlay.emit("transcription-completed", ()) {
+            tracing::warn!("Failed to emit transcription-completed to overlay: {}", e);
+        }
     }
 
     FallbackSink.output(&text)?;
 
+    Ok(())
+}
+
+fn validate_cloud_access(acknowledged: bool, api_key: Option<&str>) -> Result<()> {
+    if !acknowledged {
+        return Err(AppError::Transcription(
+            "Cloud upload must be acknowledged in Settings before recording".into(),
+        ));
+    }
+    if api_key.is_none_or(|key| key.trim().is_empty()) {
+        return Err(AppError::Transcription("Groq API key not set".into()));
+    }
     Ok(())
 }
 
@@ -379,4 +419,16 @@ pub fn record_mic_test(app: AppHandle, state: State<RecordingState>) -> Result<S
         .map_err(|e| crate::errors::AppError::Audio(e.to_string()))?;
 
     Ok(wav_path.to_string_lossy().into_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cloud_requires_consent_and_a_key() {
+        assert!(validate_cloud_access(false, Some("gsk_test")).is_err());
+        assert!(validate_cloud_access(true, None).is_err());
+        assert!(validate_cloud_access(true, Some("gsk_test")).is_ok());
+    }
 }

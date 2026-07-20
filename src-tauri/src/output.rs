@@ -1,4 +1,4 @@
-use arboard::Clipboard;
+use arboard::{Clipboard, ImageData};
 use enigo::{
     Direction::{Click, Press, Release},
     Enigo, Key, Keyboard, Settings,
@@ -18,6 +18,41 @@ pub struct ClipboardSink;
 
 /// Tries `EnigoTyper` first; falls back to `ClipboardSink` on error.
 pub struct FallbackSink;
+
+enum PreviousClipboard {
+    Text(String),
+    Image(ImageData<'static>),
+    Empty,
+}
+
+fn restore_clipboard_if_unchanged(
+    clipboard: &mut Clipboard,
+    transcript: &str,
+    previous: PreviousClipboard,
+) -> Result<()> {
+    if !matches!(clipboard.get_text(), Ok(current) if current == transcript) {
+        return Ok(());
+    }
+
+    match previous {
+        PreviousClipboard::Text(text) => clipboard.set_text(text),
+        PreviousClipboard::Image(image) => clipboard.set_image(image),
+        PreviousClipboard::Empty => clipboard.clear(),
+    }
+    .map_err(|e| AppError::Output(e.to_string()))
+}
+
+fn finish_clipboard_paste(
+    paste_result: Result<()>,
+    release_result: Result<()>,
+    restore_result: Result<()>,
+) -> Result<()> {
+    if let Err(error) = restore_result {
+        tracing::warn!("Could not restore previous clipboard text: {}", error);
+    }
+    paste_result?;
+    release_result
+}
 
 #[cfg(any(target_os = "windows", test))]
 fn wait_for_modifiers_to_release(
@@ -92,6 +127,13 @@ impl OutputSink for EnigoTyper {
 impl OutputSink for ClipboardSink {
     fn output(&self, text: &str) -> Result<()> {
         let mut clipboard = Clipboard::new().map_err(|e| AppError::Output(e.to_string()))?;
+        let mut enigo =
+            Enigo::new(&Settings::default()).map_err(|e| AppError::Output(e.to_string()))?;
+        let previous = clipboard
+            .get_text()
+            .map(PreviousClipboard::Text)
+            .or_else(|_| clipboard.get_image().map(PreviousClipboard::Image))
+            .unwrap_or(PreviousClipboard::Empty);
         clipboard
             .set_text(text.to_string())
             .map_err(|e| AppError::Output(e.to_string()))?;
@@ -99,24 +141,26 @@ impl OutputSink for ClipboardSink {
         // Small delay to let clipboard settle before pasting.
         std::thread::sleep(std::time::Duration::from_millis(50));
 
-        let mut enigo =
-            Enigo::new(&Settings::default()).map_err(|e| AppError::Output(e.to_string()))?;
-        enigo
+        let press_result = enigo
             .key(Key::Control, Press)
-            .map_err(|e| AppError::Output(e.to_string()))?;
-
-        let paste_result = enigo
-            .key(Key::Unicode('v'), Click)
             .map_err(|e| AppError::Output(e.to_string()));
+
+        let paste_result = press_result.and_then(|()| {
+            enigo
+                .key(Key::Unicode('v'), Click)
+                .map_err(|e| AppError::Output(e.to_string()))
+        });
 
         // Always release Ctrl, even if paste failed
         let release_result = enigo
             .key(Key::Control, Release)
             .map_err(|e| AppError::Output(e.to_string()));
 
-        paste_result?;
-        release_result?;
-        Ok(())
+        // Give the target application time to consume the paste before restoring text.
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        let restore_result = restore_clipboard_if_unchanged(&mut clipboard, text, previous);
+
+        finish_clipboard_paste(paste_result, release_result, restore_result)
     }
 }
 
@@ -167,5 +211,12 @@ mod tests {
 
         assert!(!released);
         assert_eq!(waits, 3);
+    }
+
+    #[test]
+    fn successful_paste_is_not_failed_by_clipboard_restore() {
+        let restore_error = Err(AppError::Output("clipboard busy".into()));
+
+        assert!(finish_clipboard_paste(Ok(()), Ok(()), restore_error).is_ok());
     }
 }

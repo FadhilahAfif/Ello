@@ -9,7 +9,7 @@ By participating, you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md
 ## Toolchain Requirements
 
 - **Rust** stable (latest)
-- **Node** 20+
+- **Node** `^20.19.0` or `>=22.12.0`
 - **MSVC Build Tools** — Visual Studio 2022, or "Build Tools for Visual Studio
   2022" with the "Desktop development with C++" workload.
 - **CMake** 3.20+ (required by `whisper-rs-sys` build script)
@@ -47,24 +47,30 @@ minutes; subsequent runs use the cargo cache and finish in seconds.
 ## Running Tests
 
 ```sh
+cd src-tauri
 cargo fmt --check
 cargo clippy -- -D warnings
 cargo test
+cd ..
 npm run build
 ```
 
-All four must pass before opening a PR. Cloud and local-Whisper integration
-tests are gated on environment variables and skip silently when those are
-unset:
+All four must pass before opening a PR. Live integration tests are ignored by
+default. Run them explicitly from `src-tauri/`:
 
-- `GROQ_API_KEY` — enables cloud transcription tests.
-- `WHISPER_MODEL_PATH` — enables local Whisper tests; point this at a `.bin`
-  GGML model file.
+```powershell
+$env:GROQ_API_KEY = "..."
+cargo test groq_transcriber_live -- --ignored
+
+$env:WHISPER_MODEL_PATH = "C:\path\to\ggml-model.bin"
+$env:WHISPER_AUDIO_PATH = "C:\path\to\speech.wav"
+cargo test local_transcriber_with_fixture -- --ignored
+```
 
 For manual smoke testing, run `npm run tauri dev` and exercise the relevant
 flow. Cover at minimum: toggle hotkey, push-to-talk, active-window typing,
 clipboard fallback, transcript history search, vocabulary substitution, and
-(if Cloud-mode work) the privacy banner on first use.
+(if Cloud-mode work) the upload-consent gate on first use.
 
 ## Code Style
 
@@ -163,15 +169,15 @@ listed in `.gitignore`. It must be stored in two places:
 Only do this if the private key is lost or compromised.
 
 ```sh
-npx @tauri-apps/cli signer generate -w src-tauri/updater-pub.key -p "" --ci
+npx @tauri-apps/cli signer generate -w src-tauri/updater-priv.key -p "" --ci
 ```
 
-This writes the private key to `src-tauri/updater-pub.key` and the public
-key to `src-tauri/updater-pub.key.pub`. Rename them:
+This writes the private key directly to the ignored
+`src-tauri/updater-priv.key` path and the public key to
+`src-tauri/updater-priv.key.pub`. Move only the public key:
 
 ```sh
-mv src-tauri/updater-pub.key src-tauri/updater-priv.key
-mv src-tauri/updater-pub.key.pub src-tauri/updater-pub.key
+mv src-tauri/updater-priv.key.pub src-tauri/updater-pub.key
 ```
 
 Then update `plugins.updater.pubkey` in `src-tauri/tauri.conf.json` with the

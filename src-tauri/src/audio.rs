@@ -286,13 +286,19 @@ mod tests {
 
     #[test]
     fn wav_source_reads_fixture() {
-        let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("tests")
-            .join("fixtures")
-            .join("hello.wav");
-        if !fixture.exists() {
-            return; // fixture not present in CI — skip
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        let fixture = temp.path().to_path_buf();
+        let spec = hound::WavSpec {
+            channels: 1,
+            sample_rate: TARGET_SAMPLE_RATE,
+            bits_per_sample: 16,
+            sample_format: hound::SampleFormat::Int,
+        };
+        let mut writer = hound::WavWriter::create(&fixture, spec).unwrap();
+        for sample in [0i16, 1000, -1000, 0] {
+            writer.write_sample(sample).unwrap();
         }
+        writer.finalize().unwrap();
         let mut src = WavSource::new(&fixture);
         let pcm = src.record(60).unwrap();
         assert!(!pcm.is_empty());
