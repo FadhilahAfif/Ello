@@ -30,7 +30,7 @@ fn restore_clipboard_if_unchanged(
     transcript: &str,
     previous: PreviousClipboard,
 ) -> Result<()> {
-    if clipboard.get_text().as_deref() != Ok(transcript) {
+    if !matches!(clipboard.get_text(), Ok(current) if current == transcript) {
         return Ok(());
     }
 
