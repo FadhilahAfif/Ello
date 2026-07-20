@@ -241,8 +241,8 @@ fn run_recording_pipeline(
             model_str = settings.cloud_model.clone();
             let key = crate::credentials::get()?;
             validate_cloud_access(settings.cloud_upload_acknowledged, key.as_deref())?;
-            let key = key
-                .ok_or_else(|| AppError::Transcription("Groq API key not set".to_string()))?;
+            let key =
+                key.ok_or_else(|| AppError::Transcription("Groq API key not set".to_string()))?;
             let transcriber =
                 crate::transcribe::cloud::GroqTranscriber::new(key, settings.cloud_model);
             crate::transcribe::Transcriber::transcribe(&transcriber, &raw_pcm)?

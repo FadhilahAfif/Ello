@@ -138,8 +138,7 @@ fn parse_import_settings(mut value: serde_json::Value) -> Result<(AppSettings, O
         .and_then(|settings| settings.remove("groqApiKey"))
         .and_then(|value| value.as_str().map(str::to_owned))
         .filter(|value| !value.trim().is_empty());
-    let settings =
-        serde_json::from_value(value).map_err(|e| AppError::Settings(e.to_string()))?;
+    let settings = serde_json::from_value(value).map_err(|e| AppError::Settings(e.to_string()))?;
     Ok((settings, key))
 }
 

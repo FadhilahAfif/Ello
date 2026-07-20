@@ -408,10 +408,7 @@ mod tests {
     fn legacy_key_is_removed_before_settings_are_deserialized() {
         let mut raw = json!({ "groqApiKey": "gsk_test", "cloudModel": "whisper-large-v3" });
 
-        assert_eq!(
-            take_legacy_api_key(&mut raw).as_deref(),
-            Some("gsk_test")
-        );
+        assert_eq!(take_legacy_api_key(&mut raw).as_deref(), Some("gsk_test"));
         assert!(raw.get("groqApiKey").is_none());
     }
 }
