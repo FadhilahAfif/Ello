@@ -215,9 +215,10 @@ impl SettingsManager {
             }
             Ok(settings)
         } else {
-            let mut settings = AppSettings::default();
-            settings.groq_api_key_configured = crate::credentials::get()?.is_some();
-            Ok(settings)
+            Ok(AppSettings {
+                groq_api_key_configured: crate::credentials::get()?.is_some(),
+                ..AppSettings::default()
+            })
         }
     }
 
@@ -385,9 +386,11 @@ mod tests {
 
     #[test]
     fn v3_migration_requires_fresh_cloud_consent() {
-        let mut settings = AppSettings::default();
-        settings.schema_version = 3;
-        settings.cloud_upload_acknowledged = true;
+        let settings = AppSettings {
+            schema_version: 3,
+            cloud_upload_acknowledged: true,
+            ..AppSettings::default()
+        };
 
         let migrated = migrate_v3_to_v4(settings);
 
@@ -397,8 +400,10 @@ mod tests {
 
     #[test]
     fn retired_cloud_model_is_replaced() {
-        let mut settings = AppSettings::default();
-        settings.cloud_model = "distil-whisper-large-v3-en".to_string();
+        let mut settings = AppSettings {
+            cloud_model: "distil-whisper-large-v3-en".to_string(),
+            ..AppSettings::default()
+        };
 
         assert!(migrate_retired_cloud_model(&mut settings));
         assert_eq!(settings.cloud_model, "whisper-large-v3-turbo");
