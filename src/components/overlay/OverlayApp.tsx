@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { getSettings } from "../../lib/invoke";
+import { getOverlaySettings } from "../../lib/invoke";
 import { useOverlayState } from "./shared/useOverlayState";
 import { useMicLevel } from "./shared/useMicLevel";
 import { CardOverlay } from "./styles/CardOverlay";
@@ -28,7 +28,7 @@ export function OverlayApp() {
   const { levelRef, smoothedRef } = useMicLevel();
 
   useEffect(() => {
-    getSettings().then(s => setOverlay(s.overlay ?? DEFAULT_OVERLAY)).catch(() => {
+    getOverlaySettings().then(setOverlay).catch(() => {
       console.warn("[OverlayApp] failed to load settings, using defaults");
     });
   }, []);

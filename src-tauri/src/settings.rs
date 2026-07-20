@@ -49,7 +49,10 @@ pub struct OverlaySettings {
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
     pub schema_version: u16,
-    pub groq_api_key: Option<String>,
+    #[serde(default)]
+    pub groq_api_key_configured: bool,
+    #[serde(default)]
+    pub cloud_upload_acknowledged: bool,
     pub cloud_model: String,
     pub transcription_mode: TranscriptionMode,
     pub hotkey_mode: HotkeyMode,
@@ -90,8 +93,9 @@ pub enum HotkeyMode {
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
-            schema_version: 3,
-            groq_api_key: None,
+            schema_version: 4,
+            groq_api_key_configured: false,
+            cloud_upload_acknowledged: false,
             cloud_model: "whisper-large-v3-turbo".to_string(),
             transcription_mode: TranscriptionMode::default(),
             hotkey_mode: HotkeyMode::default(),
@@ -135,6 +139,30 @@ fn migrate_v2_to_v3(mut settings: AppSettings) -> AppSettings {
     settings
 }
 
+fn migrate_v3_to_v4(mut settings: AppSettings) -> AppSettings {
+    if settings.schema_version < 4 {
+        settings.schema_version = 4;
+        settings.cloud_upload_acknowledged = false;
+    }
+    settings
+}
+
+fn migrate_retired_cloud_model(settings: &mut AppSettings) -> bool {
+    if settings.cloud_model == "distil-whisper-large-v3-en" {
+        settings.cloud_model = "whisper-large-v3-turbo".to_string();
+        true
+    } else {
+        false
+    }
+}
+
+fn take_legacy_api_key(raw: &mut serde_json::Value) -> Option<String> {
+    raw.as_object_mut()
+        .and_then(|settings| settings.remove("groqApiKey"))
+        .and_then(|value| value.as_str().map(str::to_owned))
+        .filter(|value| !value.trim().is_empty())
+}
+
 pub struct SettingsManager {
     app_handle: AppHandle,
 }
@@ -151,7 +179,9 @@ impl SettingsManager {
             .map_err(|e| AppError::Settings(e.to_string()))?;
 
         if let Some(val) = store.get("settings") {
-            let raw: serde_json::Value = val;
+            let mut raw: serde_json::Value = val;
+            let had_legacy_key_field = raw.get("groqApiKey").is_some();
+            let legacy_key = take_legacy_api_key(&mut raw);
             let version = raw
                 .get("schemaVersion")
                 .and_then(|v| v.as_u64())
@@ -162,17 +192,32 @@ impl SettingsManager {
                 let partial: AppSettingsV1 =
                     serde_json::from_value(raw).map_err(|e| AppError::Settings(e.to_string()))?;
                 let migrated = migrate_v1_to_v2(partial.into());
-                migrate_v2_to_v3(migrated)
+                migrate_v3_to_v4(migrate_v2_to_v3(migrated))
             } else if version < 3 {
                 let s: AppSettings =
                     serde_json::from_value(raw).map_err(|e| AppError::Settings(e.to_string()))?;
-                migrate_v2_to_v3(s)
+                migrate_v3_to_v4(migrate_v2_to_v3(s))
+            } else if version < 4 {
+                let s: AppSettings =
+                    serde_json::from_value(raw).map_err(|e| AppError::Settings(e.to_string()))?;
+                migrate_v3_to_v4(s)
             } else {
                 serde_json::from_value(raw).map_err(|e| AppError::Settings(e.to_string()))?
             };
+            if let Some(key) = legacy_key.as_deref() {
+                crate::credentials::set(key)?;
+            }
+            let mut settings = settings;
+            let migrated_cloud_model = migrate_retired_cloud_model(&mut settings);
+            settings.groq_api_key_configured = crate::credentials::get()?.is_some();
+            if had_legacy_key_field || version < 4 || migrated_cloud_model {
+                self.save_settings(&settings)?;
+            }
             Ok(settings)
         } else {
-            Ok(AppSettings::default())
+            let mut settings = AppSettings::default();
+            settings.groq_api_key_configured = crate::credentials::get()?.is_some();
+            Ok(settings)
         }
     }
 
@@ -182,6 +227,10 @@ impl SettingsManager {
             .store(SETTINGS_FILE)
             .map_err(|e| AppError::Settings(e.to_string()))?;
 
+        let mut settings = settings.clone();
+        settings.schema_version = 4;
+        migrate_retired_cloud_model(&mut settings);
+        settings.groq_api_key_configured = crate::credentials::get()?.is_some();
         let val = serde_json::to_value(settings).map_err(|e| AppError::Settings(e.to_string()))?;
         store.set("settings", val);
         store
@@ -197,7 +246,6 @@ impl SettingsManager {
 struct AppSettingsV1 {
     #[serde(default = "default_schema_version_1")]
     schema_version: u16,
-    groq_api_key: Option<String>,
     #[serde(default = "default_cloud_model")]
     cloud_model: String,
     #[serde(default)]
@@ -228,7 +276,8 @@ impl From<AppSettingsV1> for AppSettings {
         let defaults = AppSettings::default();
         AppSettings {
             schema_version: v1.schema_version,
-            groq_api_key: v1.groq_api_key,
+            groq_api_key_configured: false,
+            cloud_upload_acknowledged: false,
             cloud_model: v1.cloud_model,
             transcription_mode: v1.transcription_mode,
             hotkey_mode: v1.hotkey_mode,
@@ -257,7 +306,7 @@ mod tests {
     #[test]
     fn default_settings_schema_v2_fields() {
         let settings = serde_json::to_value(AppSettings::default()).unwrap();
-        assert_eq!(settings["schemaVersion"], json!(3));
+        assert_eq!(settings["schemaVersion"], json!(4));
         assert_eq!(settings["historyEnabled"], json!(true));
         assert_eq!(settings["statsEnabled"], json!(true));
         assert_eq!(settings["onboardingComplete"], json!(false));
@@ -298,7 +347,7 @@ mod tests {
     #[test]
     fn default_settings_schema_v3() {
         let settings = serde_json::to_value(AppSettings::default()).unwrap();
-        assert_eq!(settings["schemaVersion"], json!(3));
+        assert_eq!(settings["schemaVersion"], json!(4));
         assert_eq!(settings["overlay"]["style"], json!("card"));
         assert_eq!(settings["overlay"]["color"], json!("accent"));
         assert_eq!(settings["overlay"]["position"], json!("topCenter"));
@@ -332,5 +381,37 @@ mod tests {
         assert_eq!(migrated.overlay.color, OverlayColor::Accent);
         assert_eq!(migrated.overlay.position, OverlayPosition::TopCenter);
         assert_eq!(migrated.accent_color, "#e8a020");
+    }
+
+    #[test]
+    fn v3_migration_requires_fresh_cloud_consent() {
+        let mut settings = AppSettings::default();
+        settings.schema_version = 3;
+        settings.cloud_upload_acknowledged = true;
+
+        let migrated = migrate_v3_to_v4(settings);
+
+        assert_eq!(migrated.schema_version, 4);
+        assert!(!migrated.cloud_upload_acknowledged);
+    }
+
+    #[test]
+    fn retired_cloud_model_is_replaced() {
+        let mut settings = AppSettings::default();
+        settings.cloud_model = "distil-whisper-large-v3-en".to_string();
+
+        assert!(migrate_retired_cloud_model(&mut settings));
+        assert_eq!(settings.cloud_model, "whisper-large-v3-turbo");
+    }
+
+    #[test]
+    fn legacy_key_is_removed_before_settings_are_deserialized() {
+        let mut raw = json!({ "groqApiKey": "gsk_test", "cloudModel": "whisper-large-v3" });
+
+        assert_eq!(
+            take_legacy_api_key(&mut raw).as_deref(),
+            Some("gsk_test")
+        );
+        assert!(raw.get("groqApiKey").is_none());
     }
 }

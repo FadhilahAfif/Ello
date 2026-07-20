@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, AudioDevice, OverlayStyle, OverlayPosition } from "../store/settings";
+import type { AppSettings, AudioDevice, OverlaySettings, OverlayStyle, OverlayPosition } from "../store/settings";
 
 export interface ModelManifestEntry {
   id: string;
@@ -43,7 +43,11 @@ export interface HistoryItem {
 }
 
 export const getSettings = () => invoke<AppSettings>("get_settings");
+export const getOverlaySettings = () => invoke<OverlaySettings>("get_overlay_settings");
 export const saveSettings = (settings: AppSettings) => invoke<void>("save_settings", { settings });
+export const setGroqApiKey = (apiKey: string) =>
+  invoke<void>("set_groq_api_key", { apiKey });
+export const clearGroqApiKey = () => invoke<void>("clear_groq_api_key");
 export const getDevices = () => invoke<AudioDevice[]>("get_devices");
 export const getModelManifest = () => invoke<ModelManifestEntry[]>("get_model_manifest");
 export const downloadModel = (id: string, destDir: string) =>
@@ -92,5 +96,4 @@ export interface ImportPreview {
   schemaVersion: number;
   settings: AppSettings;
   vocabulary: VocabularyRule[];
-  raw: string;
 }

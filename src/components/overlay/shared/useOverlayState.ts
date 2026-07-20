@@ -21,7 +21,7 @@ export function useOverlayState() {
 
     register(listen("recording-started",  () => setState("recording")));
     register(listen("recording-stopped",  () => setState("transcribing")));
-    register(listen("transcription-done", () => setState("hidden")));
+    register(listen("transcription-completed", () => setState("hidden")));
 
     return () => { cancelled = true; unsubs.forEach(u => u()); };
   }, []);

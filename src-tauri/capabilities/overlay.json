@@ -3,8 +3,5 @@
   "identifier": "overlay",
   "description": "Capability for the overlay window",
   "windows": ["overlay"],
-  "permissions": [
-    "core:default",
-    "core:window:allow-set-ignore-cursor-events"
-  ]
+  "permissions": ["core:default", "allow-get-overlay-settings"]
 }

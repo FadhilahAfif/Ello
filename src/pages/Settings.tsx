@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSettingsStore } from "../store/settings";
-import { saveSettings, setOverlayGeometry, exportConfig, importConfig, applyImport, getSettings } from "../lib/invoke";
+import { saveSettings, setOverlayGeometry, exportConfig, importConfig, applyImport, getSettings, setGroqApiKey, clearGroqApiKey } from "../lib/invoke";
 import type { OverlayStyle, OverlayColor, OverlayPosition } from "../store/settings";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
@@ -17,7 +17,6 @@ import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 const CLOUD_MODELS = [
   "whisper-large-v3-turbo",
   "whisper-large-v3",
-  "distil-whisper-large-v3-en",
 ];
 
 const NAV_SECTIONS = [
@@ -34,6 +33,8 @@ type NavId = typeof NAV_SECTIONS[number]["id"];
 export function Settings() {
   const { settings, devices, dirty, error, patchSetting, setSettings, setError } = useSettingsStore();
   const [saving, setSaving] = useState(false);
+  const [groqKey, setGroqKey] = useState("");
+  const [savingKey, setSavingKey] = useState(false);
   const [includeApiKey, setIncludeApiKey] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -96,7 +97,7 @@ export function Settings() {
         `Import config v${preview.schemaVersion}?\n\nThis will overwrite your current settings and ${preview.vocabulary.length} vocabulary rule(s).`
       );
       if (confirmed) {
-        await applyImport(preview.raw);
+        await applyImport(json);
         const fresh = await getSettings();
         setSettings(fresh);
         toast("Config imported.", "info");
@@ -124,6 +125,41 @@ export function Settings() {
     }
     setSettings(settings);
     setSaving(false);
+  };
+
+  const handleSetGroqKey = async () => {
+    if (!groqKey.trim()) return;
+    setSavingKey(true);
+    try {
+      await setGroqApiKey(groqKey);
+      setGroqKey("");
+      const refreshed = await getSettings();
+      useSettingsStore.setState((state) => ({
+        settings: { ...state.settings, groqApiKeyConfigured: refreshed.groqApiKeyConfigured },
+      }));
+      toast("Groq API key saved to Windows Credential Manager.", "info");
+    } catch (e) {
+      toast(String(e), "error");
+    } finally {
+      setSavingKey(false);
+    }
+  };
+
+  const handleClearGroqKey = async () => {
+    setSavingKey(true);
+    try {
+      await clearGroqApiKey();
+      setGroqKey("");
+      const refreshed = await getSettings();
+      useSettingsStore.setState((state) => ({
+        settings: { ...state.settings, groqApiKeyConfigured: refreshed.groqApiKeyConfigured },
+      }));
+      toast("Groq API key cleared.", "info");
+    } catch (e) {
+      toast(String(e), "error");
+    } finally {
+      setSavingKey(false);
+    }
   };
 
   const scrollTo = (id: NavId) => {
@@ -256,16 +292,33 @@ export function Settings() {
                         ))}
                       </Select>
                     </Field>
-                    <Field label="Groq API key" hint="Stored locally in your app data">
-                      <Input
-                        aria-label="Groq API key"
-                        type="password"
-                        autoComplete="off"
-                        placeholder="gsk_..."
-                        value={settings.groqApiKey ?? ""}
-                        onChange={(e) => patchSetting("groqApiKey", e.target.value || null)}
-                      />
+                    <Field label="Groq API key" hint={settings.groqApiKeyConfigured ? "Configured in Windows Credential Manager" : "Not configured"}>
+                      <div className="flex gap-[var(--space-2)]">
+                        <Input
+                          aria-label="New Groq API key"
+                          type="password"
+                          autoComplete="off"
+                          placeholder="gsk_..."
+                          value={groqKey}
+                          onChange={(e) => setGroqKey(e.target.value)}
+                        />
+                        <Button onClick={handleSetGroqKey} disabled={!groqKey.trim() || savingKey} size="sm">
+                          {settings.groqApiKeyConfigured ? "Replace" : "Save key"}
+                        </Button>
+                        {settings.groqApiKeyConfigured && (
+                          <Button onClick={handleClearGroqKey} disabled={savingKey} size="sm" variant="ghost">Clear</Button>
+                        )}
+                      </div>
                     </Field>
+                    <label className="flex items-start gap-[var(--space-3)] text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                      <input
+                        type="checkbox"
+                        className="mt-[2px] accent-[var(--accent)] rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-base)]"
+                        checked={settings.cloudUploadAcknowledged}
+                        onChange={(e) => patchSetting("cloudUploadAcknowledged", e.target.checked)}
+                      />
+                      <span>I understand that Cloud mode uploads recorded audio to Groq, which may retain inference data for up to 30 days for reliability and abuse monitoring unless Zero Data Retention is enabled for the account.</span>
+                    </label>
                   </div>
                 )}
 
@@ -640,8 +693,7 @@ function ModePill<T extends string>({
 function PrivacyNote() {
   return (
     <p className="text-[11px] text-[var(--text-tertiary)] font-[var(--font-mono)] leading-relaxed">
-      Cloud mode uploads recorded audio to Groq for transcription. No audio is
-      stored after the request returns.
+      Cloud mode uploads recorded audio to Groq for transcription. Ello deletes its temporary WAV after the request; Groq may retain inference data for up to 30 days for reliability and abuse monitoring unless Zero Data Retention is enabled for the account.
     </p>
   );
 }

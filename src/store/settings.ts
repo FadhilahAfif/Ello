@@ -32,8 +32,9 @@ export type ModelStatus =
 
 export interface AppSettings {
   schemaVersion: number;
-  // Security: in-memory only — never log, serialize to UI, or pass as prop
-  groqApiKey: string | null;
+  // Non-secret status only; the API key itself never enters the webview.
+  groqApiKeyConfigured: boolean;
+  cloudUploadAcknowledged: boolean;
   cloudModel: string;
   transcriptionMode: TranscriptionMode;
   hotkeyMode: HotkeyMode;
@@ -58,8 +59,9 @@ export interface AudioDevice {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  schemaVersion: 3,
-  groqApiKey: null,
+  schemaVersion: 4,
+  groqApiKeyConfigured: false,
+  cloudUploadAcknowledged: false,
   cloudModel: "whisper-large-v3-turbo",
   transcriptionMode: "cloud",
   hotkeyMode: "toggle",

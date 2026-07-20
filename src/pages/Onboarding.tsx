@@ -3,7 +3,7 @@ import { toast } from "../components/ui/Toast";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { useSettingsStore } from "../store/settings";
-import { saveSettings, recordMicTest, getModelManifest, downloadModel, cancelDownload, checkInstalledModels } from "../lib/invoke";
+import { saveSettings, recordMicTest, getModelManifest, downloadModel, cancelDownload, checkInstalledModels, setGroqApiKey, getSettings } from "../lib/invoke";
 import type { ModelManifestEntry } from "../lib/invoke";
 import type { ModelStatus } from "../store/settings";
 import { navigate } from "../app/router";
@@ -152,7 +152,7 @@ function StepMode({ onNext }: { onNext: (patches: Record<string, unknown>) => vo
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-[var(--space-3)]">
         {([
-          { id: "cloud", label: "Cloud", sub: "Groq API", desc: "Fast, accurate, requires internet. Your audio is sent to Groq and discarded after transcription." },
+          { id: "cloud", label: "Cloud", sub: "Groq API", desc: "Fast and accurate, but uploads audio to Groq. Ello deletes its temporary WAV after the request." },
           { id: "local", label: "Local", sub: "Whisper on-device", desc: "Private, no internet needed. Slower first run while the model loads." },
         ] as const).map(({ id, label, sub, desc }) => {
           const active = mode === id;
@@ -185,12 +185,27 @@ function StepMode({ onNext }: { onNext: (patches: Record<string, unknown>) => vo
   );
 }
 
-function StepApiKey({ onNext }: { onNext: (patches: Record<string, unknown>) => void }) {
+function StepApiKey({ onNext }: { onNext: (patches: Record<string, unknown>) => Promise<void> }) {
   const { settings } = useSettingsStore();
-  const [key, setKey] = useState(settings.groqApiKey ?? "");
+  const [key, setKey] = useState("");
   const [model, setModel] = useState(settings.cloudModel);
+  const [acknowledged, setAcknowledged] = useState(settings.cloudUploadAcknowledged);
+  const [saving, setSaving] = useState(false);
 
-  const CLOUD_MODELS = ["whisper-large-v3-turbo", "whisper-large-v3", "distil-whisper-large-v3-en"];
+  const CLOUD_MODELS = ["whisper-large-v3-turbo", "whisper-large-v3"];
+
+  const handleContinue = async () => {
+    setSaving(true);
+    try {
+      if (key.trim()) await setGroqApiKey(key);
+      await onNext({ cloudModel: model, cloudUploadAcknowledged: acknowledged });
+      useSettingsStore.getState().setSettings(await getSettings());
+    } catch (e) {
+      toast(String(e), "error");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-[var(--space-8)]">
@@ -200,7 +215,7 @@ function StepApiKey({ onNext }: { onNext: (patches: Record<string, unknown>) => 
       </div>
       <div className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-sunken)] px-[var(--space-5)] py-[var(--space-4)]">
         <p className="text-[11px] font-[var(--font-mono)] text-[var(--text-tertiary)] leading-relaxed">
-          Cloud mode sends recorded audio to Groq for transcription. No audio is stored after the request returns. Your key is stored locally only.
+          Cloud mode sends recorded audio to Groq for transcription. Ello deletes its temporary WAV after the request. Groq may retain inference data for up to 30 days for reliability and abuse monitoring unless Zero Data Retention is enabled for your account. Your key is stored in Windows Credential Manager.
         </p>
       </div>
       <div className="flex flex-col gap-[var(--space-5)]">
@@ -228,8 +243,17 @@ function StepApiKey({ onNext }: { onNext: (patches: Record<string, unknown>) => 
           </select>
         </div>
       </div>
+      <label className="flex items-start gap-[var(--space-3)] text-[11px] text-[var(--text-secondary)] leading-relaxed">
+        <input
+          type="checkbox"
+          className="mt-[2px] accent-[var(--accent)] rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-base)]"
+          checked={acknowledged}
+          onChange={(e) => setAcknowledged(e.target.checked)}
+        />
+        <span>I understand that Cloud mode uploads my recorded audio to Groq under the retention terms above.</span>
+      </label>
       <div className="flex items-center gap-[var(--space-3)]">
-        <Button onClick={() => onNext({ groqApiKey: key || null, cloudModel: model })} variant="default">
+        <Button onClick={handleContinue} variant="default" disabled={saving || !acknowledged || (!key.trim() && !settings.groqApiKeyConfigured)}>
           Continue
           <ChevronRight size={13} strokeWidth={1.6} className="ml-[6px]" />
         </Button>
@@ -545,7 +569,7 @@ function StepDone({ onFinish }: { onFinish: () => void }) {
           { label: "Mode", value: settings.transcriptionMode === "cloud" ? "Cloud (Groq)" : "Local (Whisper)" },
           { label: "Hotkey", value: settings.hotkey, mono: true },
           { label: "Trigger", value: settings.hotkeyMode === "toggle" ? "Toggle" : "Push to talk" },
-          { label: "API key", value: settings.transcriptionMode === "cloud" ? (settings.groqApiKey ? "Set" : "Not set") : "N/A" },
+          { label: "API key", value: settings.transcriptionMode === "cloud" ? (settings.groqApiKeyConfigured ? "Set" : "Not set") : "N/A" },
         ].map(({ label, value, mono }, i, arr) => (
           <div key={label} className={`flex items-center justify-between px-[var(--space-5)] py-[var(--space-3)] ${i < arr.length - 1 ? "border-b border-[var(--border-hairline)]" : ""}`}>
             <span className="text-[12px] text-[var(--text-secondary)]">{label}</span>

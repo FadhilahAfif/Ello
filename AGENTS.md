@@ -20,10 +20,10 @@ for the convention.
 
 - `npm run tauri dev` - development.
 - `npm run build` - frontend build.
-- `cargo fmt --check` - Rust formatting check.
-- `cargo clippy -- -D warnings` - Rust lint check.
-- `cargo test` - Rust tests. Cloud and Whisper tests are gated on
-  `GROQ_API_KEY` and `WHISPER_MODEL_PATH`.
+- `cd src-tauri; cargo fmt --check` - Rust formatting check.
+- `cd src-tauri; cargo clippy -- -D warnings` - Rust lint check.
+- `cd src-tauri; cargo test` - Rust tests. Cloud and Whisper integration tests
+  are ignored unless their documented environment variables are supplied.
 
 ## Working Rules
 
@@ -52,8 +52,8 @@ for the convention.
 ## Security
 
 - Never log API keys, raw audio, or transcript contents.
-- Groq API keys live in `tauri-plugin-store` only.
-- Show a cloud-upload warning before first Cloud-mode use.
+- Groq API keys live in Windows Credential Manager only.
+- Require explicit cloud-upload acknowledgment before Cloud-mode use.
 - Validate downloaded model files before loading.
 - Errors shown to the frontend must not include Groq response bodies verbatim.
 
