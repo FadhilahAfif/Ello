@@ -103,9 +103,6 @@ pub fn apply_import(app: AppHandle, db: State<Db>, json: String) -> Result<()> {
     }
 
     let (mut settings, imported_key) = parse_import_settings(config.settings)?;
-    if let Some(key) = imported_key {
-        crate::credentials::set(&key)?;
-    }
     settings.cloud_upload_acknowledged = false;
     SettingsManager::new(app).save_settings(&settings)?;
 
@@ -128,6 +125,10 @@ pub fn apply_import(app: AppHandle, db: State<Db>, json: String) -> Result<()> {
     }
 
     tx.commit().map_err(|e| AppError::Database(e.to_string()))?;
+
+    if let Some(key) = imported_key {
+        crate::credentials::set(&key)?;
+    }
 
     Ok(())
 }

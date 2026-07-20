@@ -13,6 +13,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -65,4 +67,4 @@ jobs:
             "$hash  $($_.Name)"
           }
           $lines | Set-Content -Encoding ascii SHA256SUMS.txt
-          gh release upload ${{ github.ref_name }} SHA256SUMS.txt --clobber
+          gh release upload $env:GITHUB_REF_NAME SHA256SUMS.txt --clobber
